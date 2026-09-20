@@ -262,6 +262,25 @@ Script load order is now: `creature.js` → `speech.js` → `items.js` → `scen
   Open-Meteo — no API key needed). Circular thermostat dial + compact always-visible band strip.
 - **Currency (Credits)**: adult pets earn passively on a per-species variable-ratio timer; health,
   gear, and stats affect the payout multiplier. Persistent Bank with a recent-earnings log.
+- **Ground coins — the return ritual** (`groundItems`, `spawnReturnCoins`, `collectGroundItem`):
+  **only adults earn passively, and a pet takes a measured 108h (~4.5 real days) to get there** —
+  so a young pet had *no* income at all. Coins spawn on the ground when you come back after
+  `GROUND_COIN_MIN_GAP` (30min), 1 per hour away, **capped at `GROUND_COIN_MAX` 5**, worth 5–8
+  each. They pay for *showing up* — the one behaviour the whole game is built around — and fade to
+  irrelevance beside adult income, which gives the pet's life two economic acts: **forage as a
+  kid, earn as an adult.** Measured payout curve: 29min → 0, 31min → 1, 4h → 4, 6h → 5, and a
+  3-day absence → still 5.
+  The **chore half already existed**: `catchUpAfterGap` spawns missed poops, hard-capped at
+  `MAX_POOP` 4 by `Math.min(missedPoops, MAX_POOP - poops.length)` — **don't "fix" that cap**, it's
+  what stops a long absence becoming a chore. Coins render on the same `#poop-layer` ground band so
+  chore and reward read as one tidy-up, and `checkGroundClear()` fires a `tidy` speech beat + ✨
+  when the *last* item of either kind goes. It's only ever called from a site that just removed
+  something, so an already-tidy world never triggers it.
+  **GOTCHAS:** (1) `GROUND_COIN_MIN_GAP` is the only thing stopping a player farming coins by
+  reloading — `catchUpAfterGap` runs on every page load. (2) It's called with **real** elapsed
+  seconds, never scaled by `timeScale`, so **the dev time slider will never produce return coins**;
+  set `state.lastTick` directly to test them. (3) The save blob now carries `groundItems`, so
+  clobbering it during a headless sim loses coins as well as bank/inventory.
 - **Equipment**: procedural items (5 color-coded rarity tiers), up to 7 slots per pet — 6 universal
   (head, face, body, back, ringLeft, ringRight) + 1 anatomy-gated slot (feet/antenna/ears/tentacles,
   depending on the pet's appendage). Paper-doll Gear screen with live stat updates, a 20-slot grid

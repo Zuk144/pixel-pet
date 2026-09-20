@@ -2065,3 +2065,27 @@ h1 {
   filter: saturate(0.55);
   transition: opacity 0.5s ease, filter 0.5s ease;
 }
+
+/* Ground coins: the reward half of a return. Same ground band and same tap
+   affordance as the poops, so tidying up and finding treasure read as one
+   little ritual rather than two systems. The glint is what separates
+   "collect me" from the litter sitting beside it. */
+.ground-coin {
+  position: absolute;
+  font-size: 22px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+  animation: coinGlint 2.4s ease-in-out infinite;
+}
+
+.ground-coin:active {
+  transform: scale(0.88);
+}
+
+@keyframes coinGlint {
+  0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 1px 2px rgba(0,0,0,.3)); }
+  50% { transform: translateY(-3px) scale(1.06); filter: drop-shadow(0 3px 6px rgba(190,140,20,.55)); }
+}

@@ -25,6 +25,16 @@ const POOP_MIN_INTERVAL = 3 * HOUR;
 const POOP_MAX_INTERVAL = 5 * HOUR;
 const POOP_DIRTY_AMOUNT = 12; // cleanliness lost when a poop appears
 
+// ---- Ground coins: income for a pet too young to earn -------------------
+// Only adults earn passively, and a pet takes 108h (~4.5 real days) to get
+// there - so a young pet had NO income at all. These pay for SHOWING UP,
+// which is the one behaviour the whole game is built around, and they fade
+// to irrelevance beside adult income: forage as a kid, earn as an adult.
+const GROUND_COIN_MIN_GAP = 30 * 60; // don't litter the world on a quick reload
+const GROUND_COIN_MAX = 5;           // caps a 3-day absence at one visit's worth
+const GROUND_COIN_MIN_VALUE = 5;
+const GROUND_COIN_MAX_VALUE = 8;
+
 // ---- Need cadences: each need has its OWN tempo -------------------------
 // Sim testing showed hunger and cleanliness both went critical at ~5h, so
 // every check-in was the same undifferentiated "tap everything" ritual.
@@ -290,6 +300,7 @@ function defaultState() {
 
 let state = defaultState();
 let poops = []; // { id, x, y } as percentages within the screen
+let groundItems = []; // { id, kind, value, x, y } - coins waiting on the ground
 let history = []; // past pets that ran away - most recent first
 const MAX_HISTORY = 20;
 let bank = 0; // persistent across every pet - never reset by a runaway
@@ -382,7 +393,7 @@ function save() {
   localStorage.setItem(
     SAVE_KEY,
     JSON.stringify({
-      state, poops, history, bank, earnings, inventory,
+      state, poops, groundItems, history, bank, earnings, inventory,
       shopStock, shopClock, nextShopRefreshAt, weatherEnabled,
     })
   );
@@ -431,6 +442,12 @@ function catchUpAfterGap(elapsedSeconds) {
     catchUpEarnings(Math.min(capped, state.simClock - state.stageEnteredAt));
   }
 
+  // NOTE: this is called with REAL elapsed seconds, never scaled by timeScale -
+  // so the dev time slider will never produce return coins. Set state.lastTick
+  // directly to test them.
+  spawnReturnCoins(capped);
+  if (capped >= GROUND_COIN_MIN_GAP) petSpeak("welcomeBack");
+
   state.lastTick = Date.now();
 }
 
@@ -446,6 +463,7 @@ function load() {
     ),
   });
   poops = saved.poops || [];
+  groundItems = saved.groundItems || []; // legacy saves predate this
   history = saved.history || [];
   bank = saved.bank || 0;
   earnings = saved.earnings || [];
@@ -484,6 +502,7 @@ function clean() {
   poops = [];
   petSpeak("cleaned");
   floatEmoji("✨");
+  checkGroundClear();
 }
 
 function warmUp() {
@@ -511,6 +530,47 @@ function giveMedicine() {
 function cleanOnePoop(id) {
   poops = poops.filter((p) => p.id !== id);
   state.cleanliness = clamp(state.cleanliness + POOP_DIRTY_AMOUNT, 0, 100);
+  checkGroundClear();
+}
+
+// Coming back after a while seeds the world with things to tap: the missed
+// poops are the chore (already spawned by catchUpAfterGap), these are the
+// payoff. One return, some tidying, a little treasure.
+function spawnReturnCoins(elapsedSeconds) {
+  if (state.stage === "egg" || state.ranAway) return;
+  if (elapsedSeconds < GROUND_COIN_MIN_GAP) return; // a quick reload isn't a return
+  const n = clamp(Math.floor(elapsedSeconds / HOUR), 1, GROUND_COIN_MAX);
+  for (let i = 0; i < n; i++) {
+    groundItems.push({
+      id: Math.random().toString(36).slice(2),
+      kind: "coin",
+      value:
+        GROUND_COIN_MIN_VALUE +
+        Math.round(Math.random() * (GROUND_COIN_MAX_VALUE - GROUND_COIN_MIN_VALUE)),
+      x: 12 + Math.random() * 76, // same convention as spawnPoop
+      y: 55 + Math.random() * 35,
+    });
+  }
+}
+
+function collectGroundItem(id) {
+  const it = groundItems.find((g) => g.id === id);
+  if (!it) return;
+  groundItems = groundItems.filter((g) => g.id !== id);
+  bank += it.value;
+  logEarning(it.value, `${state.name} found it.`);
+  showFloatingCredit(it.value);
+  chimeDing();
+  checkGroundClear();
+}
+
+// "The level ends clean and simple." Only ever called from a site that just
+// removed something, so a world that was already tidy never triggers it.
+function checkGroundClear() {
+  if (poops.length === 0 && groundItems.length === 0) {
+    petSpeak("tidy");
+    floatEmoji("✨");
+  }
 }
 
 function shakeEgg() {
@@ -522,6 +582,7 @@ function shakeEgg() {
 function newEgg() {
   state = defaultState();
   poops = [];
+  groundItems = [];
   activeRoom = "hall"; // egg stage: Home/Vet don't apply, so land on the Hall
   save();
   render();
@@ -2342,6 +2403,21 @@ function renderPoops() {
     btn.title = "Clean this up";
     btn.addEventListener("click", () => {
       cleanOnePoop(poop.id);
+      render();
+    });
+    poopLayerEl.appendChild(btn);
+  }
+  // Coins ride the same ground band, so the chore and the reward read as one
+  // tidy-up rather than two systems.
+  for (const it of groundItems) {
+    const btn = document.createElement("button");
+    btn.className = "ground-coin";
+    btn.textContent = "🪙";
+    btn.style.left = it.x + "%";
+    btn.style.top = groundPct - 9 + (it.y / 100) * 8 + "%";
+    btn.title = `Pick up ${it.value} credits`;
+    btn.addEventListener("click", () => {
+      collectGroundItem(it.id);
       render();
     });
     poopLayerEl.appendChild(btn);

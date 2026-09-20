@@ -102,6 +102,17 @@ const SPEECH_LINES = {
     { t: "Shhh, I'm sleeping.", e: "🤫" },
     { t: "Zzz...", e: "😴" },
   ],
+  welcomeBack: [
+    { t: "You're back!", e: "🥰" },
+    { t: "I missed you!", e: "🤗" },
+    { t: "Look what I found while you were gone!", e: "😃" },
+    { t: "Where did you go?", e: "🥺" },
+  ],
+  tidy: [
+    { t: "All clean!", e: "✨" },
+    { t: "Everything's tidy now.", e: "😌" },
+    { t: "Much better. Thank you!", e: "🥹" },
+  ],
 };
 
 function speechHash(str) {
