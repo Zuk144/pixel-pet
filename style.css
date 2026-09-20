@@ -1870,6 +1870,32 @@ h1 {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
+  /* Everything else positioned against a screen edge needs the inset too, or
+     it keeps measuring from where the edge used to be. Without these the vet
+     pill rendered 33px INSIDE the top bar on a notched phone (on top of the
+     pet's name), and the feed flyout overlapped the dock keys by 15px. */
+  #vet-pill,
+  #temp-pill,
+  #clean-pill,
+  #sleep-pill {
+    top: calc(66px + env(safe-area-inset-top, 0px));
+  }
+
+  #pet-message {
+    top: calc(76px + env(safe-area-inset-top, 0px));
+  }
+
+  /* The sleep pill sits where the speech chip goes, so the chip drops below
+     it - that offset needs the inset as well or they collide again. */
+  #app.asleep #pet-message,
+  #app.has-pill #pet-message {
+    top: calc(124px + env(safe-area-inset-top, 0px));
+  }
+
+  #feed-menu {
+    bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+  }
+
   /* The tray below the slab has nowhere left to live. It holds only Test
      Tools now, so it stays out of the way until dev mode switches them on. */
   #dev-tray {
@@ -1880,4 +1906,130 @@ h1 {
     display: block;
     padding: 10px 0 calc(10px + env(safe-area-inset-bottom, 0px));
   }
+}
+
+/* ============================================================
+   CONTEXTUAL PILLS + the two-key dock
+
+   Warm / Cool / Clean used to be permanent keys. Measured against the
+   simulation that was a lie about importance: hunger warns first ~90% of
+   the time, cleanliness is a ~13h chore, and temperature was measured at
+   0.0% occurrence before weather events existed. Three of five keys sat
+   waiting for needs that are idle almost always, diluting the one key that
+   is the actual loop. They are contextual pills now - louder than the keys
+   they replace when they matter, invisible when they don't.
+   ============================================================ */
+
+/* Both new pills inherit #vet-pill's geometry. GOTCHA: pillPulse re-applies
+   translateX(-50%) every frame, so any centred pill must keep that transform
+   or it snaps to the left edge mid-animation. */
+#temp-pill,
+#clean-pill {
+  position: absolute;
+  top: 66px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 21;
+  border: none;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  color: #fff;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: pillPulse 1.1s ease-in-out infinite;
+}
+
+#temp-pill.cold {
+  background: rgba(76, 158, 194, 0.92);
+  box-shadow: 0 4px 14px rgba(40, 110, 150, 0.4);
+}
+
+#temp-pill.heat {
+  background: rgba(227, 122, 83, 0.92);
+  box-shadow: 0 4px 14px rgba(180, 80, 45, 0.4);
+}
+
+/* Grime is a chore, not an emergency - it gets the calm sky tone and a
+   gentler pulse than the vet's red alarm. */
+#clean-pill {
+  background: rgba(93, 168, 200, 0.9);
+  box-shadow: 0 4px 14px rgba(50, 115, 150, 0.35);
+  animation: pillPulse 2.2s ease-in-out infinite;
+}
+
+/* Dock: one primary and one menu key. Feed takes the room the other three
+   keys used to waste. DO NOT change the dock's height or bottom offset -
+   sizeSceneCanvas() derives SCENE_GROUND_Y from the dock's top via
+   GROUND_DOCK_GAP, so resizing it moves the ground the pet stands on. */
+#dock .dock-btn.feed {
+  flex: 1;
+}
+
+#dock .dock-btn.more {
+  flex: 0 0 82px;
+}
+
+/* Warm / Cool / Clean keep a permanent home in the orb popover they belong
+   to, so nothing became unreachable - important for Clean especially, since
+   CLEAN_PASSIVE_RATE grime is NOT recoverable by tapping poops. */
+.pop-action {
+  width: 100%;
+  margin: 10px 0 2px;
+  padding: 10px;
+  border: none;
+  border-radius: 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  color: #5a4a3a;
+  cursor: pointer;
+  background: var(--card);
+  box-shadow: 0 3px 0 var(--shell-edge);
+}
+
+.pop-action:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--shell-edge);
+}
+
+.pop-action.warm { background: var(--coral); box-shadow: 0 3px 0 var(--coral-dk); }
+.pop-action.cool { background: var(--sky);   box-shadow: 0 3px 0 var(--sky-dk); }
+.pop-action.clean { background: var(--mint); box-shadow: 0 3px 0 var(--mint-dk); }
+
+#temp-actions {
+  display: flex;
+  gap: 8px;
+}
+
+#temp-actions .pop-action {
+  flex: 1;
+}
+
+/* The wide Feed key lays its icon and label side by side and scales them up.
+   Stacked-and-centred is right for a 70px key; on a 297px one it reads as a
+   small button someone stretched, rather than the primary action. */
+#dock .dock-btn.feed {
+  flex-direction: row;
+  justify-content: center;
+  gap: 10px;
+}
+
+#dock .dock-btn.feed .dock-emoji {
+  font-size: 26px;
+}
+
+#dock .dock-btn.feed small {
+  font-size: 15px;
+  letter-spacing: 0.04em;
+}
+
+/* Any contextual pill occupies the speech chip's line, so the chip drops
+   below it. Same fix the sleep pill already had; the vet pill silently
+   needed it too. */
+#app.has-pill #pet-message {
+  top: 124px;
 }

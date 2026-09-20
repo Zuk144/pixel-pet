@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Pixel Pet</title>
-<link rel="stylesheet" href="style.css?v=50" />
+<link rel="stylesheet" href="style.css?v=53" />
 </head>
 <body>
   <!-- The slab: one phone-like face. The world fills it edge to edge;
@@ -32,8 +32,11 @@
       <button id="bank-badge" data-room="bank">🪙 <span id="bank-amount">0</span></button>
     </div>
 
-    <!-- Contextual: fades in over the world only when the pet is sick -->
+    <!-- Contextual pills: the world tells you what it needs instead of five
+         permanent keys asking. Only ONE ever shows - see pickContextPill(). -->
     <button id="vet-pill" class="hidden">💊 Needs the vet</button>
+    <button id="temp-pill" class="hidden"><span id="temp-pill-text">❄️ Cold snap</span></button>
+    <button id="clean-pill" class="hidden">🫧 Needs a tidy</button>
 
     <!-- Contextual: the "leave it be" signal while the pet sleeps -->
     <div id="sleep-pill" class="hidden">🌙 <span id="sleep-text">Sleeping</span></div>
@@ -48,9 +51,6 @@
     <!-- Care dock: the core loop, always visible, zero taps deep -->
     <div id="dock">
       <button id="feed-btn" class="dock-btn feed"><span class="dock-emoji">🍽️</span><small>Feed</small></button>
-      <button id="warm-btn" class="dock-btn warm"><span class="dock-emoji">🔥</span><small>Warm</small></button>
-      <button id="cool-btn" class="dock-btn cool"><span class="dock-emoji">❄️</span><small>Cool</small></button>
-      <button id="clean-btn" class="dock-btn clean"><span class="dock-emoji">🧹</span><small>Clean</small></button>
       <button id="more-btn" class="dock-btn more"><span class="dock-emoji">•••</span><small>More</small><span id="vet-badge" class="badge hidden"></span></button>
     </div>
 
@@ -145,12 +145,13 @@
       <div class="pop-section hidden" data-pop="food">
         <div class="pop-title">🍖 Fullness</div>
         <div class="bar"><div id="hunger-fill" class="fill hunger"></div></div>
-        <p class="pop-note">Feed from the dock: Snack +12 · Meal +30 · Feast +55</p>
+        <p class="pop-note">Tap Feed for a Meal (+30). Hold it for a Snack (+12) or a Feast (+55).</p>
       </div>
       <div class="pop-section hidden" data-pop="clean">
         <div class="pop-title">🫧 Cleanliness</div>
         <div class="bar"><div id="clean-fill" class="fill clean"></div></div>
-        <p class="pop-note">Tap poops on the screen, or Clean from the dock.</p>
+        <button id="clean-btn" class="pop-action clean">🧹 Tidy up</button>
+        <p class="pop-note">Tap poops on the screen as they appear, or tidy everything at once.</p>
       </div>
       <div class="pop-section hidden" data-pop="temp">
         <div class="pop-title">🌡️ Comfort</div>
@@ -172,6 +173,10 @@
             <div id="thermo-status"></div>
             <div id="thermo-outside"></div>
           </div>
+        </div>
+        <div id="temp-actions">
+          <button id="warm-btn" class="pop-action warm">🔥 Warm</button>
+          <button id="cool-btn" class="pop-action cool">❄️ Cool</button>
         </div>
         <button id="weather-toggle-btn">📍 Use my real local weather</button>
       </div>
@@ -208,10 +213,10 @@
     </div>
   </div>
 
-  <script src="creature.js?v=50"></script>
-  <script src="speech.js?v=50"></script>
-  <script src="items.js?v=50"></script>
-  <script src="scenes.js?v=50"></script>
-  <script src="main.js?v=50"></script>
+  <script src="creature.js?v=53"></script>
+  <script src="speech.js?v=53"></script>
+  <script src="items.js?v=53"></script>
+  <script src="scenes.js?v=53"></script>
+  <script src="main.js?v=53"></script>
 </body>
 </html>

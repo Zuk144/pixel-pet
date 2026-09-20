@@ -53,16 +53,38 @@ bars, no labeled form sections, no data-dense buttons.
 - **Top bar**: one frosted pill (`#top-bar`) — pet name + stage chip, the three **status orbs**
   (conic ring = level, color = urgency, pulses when out of range), credits. Tapping an orb opens
   the **stat popover** (thermostat dial + weather toggle live in the temp popover).
-- **Care dock** (`#dock`): Feed/Warm/Cool/Clean always visible as chunky candy keys
-  (butter/coral/sky/mint, darker `box-shadow: 0 4px 0 <dk>` underside, compress on press) + a dark
-  **••• More** key. Feed pops a small flyout (`#feed-menu`: Snack/Meal/Feast); More slides up the
-  sheet. The core loop is never hidden behind navigation — that's the law.
+- **Care dock** (`#dock`): **two keys — a wide butter `Feed` and a dark `••• More`.** Feed is
+  tap-to-Meal (+30) and **hold 450ms** for the `#feed-menu` flyout (Snack/Meal/Feast); More slides
+  up the sheet. The core loop is never hidden behind navigation — that's the law, and Feed being
+  one tap is that law honoured properly rather than diluted five ways.
+  **Warm/Cool/Clean used to be permanent keys and are not any more.** Measured against the
+  simulation they were a lie about importance: hunger warns first ~90% of the time, cleanliness is
+  a ~13h chore, and temperature was measured at **0.0% occurrence** before weather events existed.
+  Three of five keys sat idle almost always, diluting the one key that is the actual loop. They
+  are **contextual pills** now (below) plus a permanent home in the orb popover each belongs to
+  (`.pop-action` buttons — `#warm-btn`/`#cool-btn` in the temp popover, `#clean-btn` in the clean
+  one). **Those ids are deliberately unchanged** so the original listeners still work untouched.
+  Keeping `#clean-btn` reachable is not optional: `CLEAN_PASSIVE_RATE` grime (100/20h) is **not**
+  recoverable by tapping poops (+12 each), so with no full `clean()` anywhere, cleanliness can
+  only ever fall and the pet drifts into permanent distress.
 - **The sheet** (`#companion`, reused id so main.js room logic is untouched): an iOS-style bottom
   sheet (translateY slide, rounded top, frosted cream) holding the amber LCD readout
   (`#companion-screen`), a Gear/Shop/Vet/Bank/Hall tab row, and the scrollable room panels.
   `activeRoom === "home"` = sheet closed. The ••• key reopens to `lastSheetRoom`.
-- **Contextual controls**: UI reacts to the world — a red **vet pill** (`#vet-pill`) fades in over
-  the scene only while the pet is sick; the More key carries the red vet badge dot.
+- **Contextual pills**: the world asks for what it needs instead of permanent keys waiting to be
+  needed. `pickContextPill()` returns **exactly one** — worst first: `vet` (sick) → `temp`
+  (`tempDiscomfortAmount() > 0`) → `clean` (`cleanliness <= WARN_CLEAN`), and **nothing while
+  asleep** unless sick. One at a time is not cosmetic: all three are absolutely positioned on the
+  same 66px line and would stack on each other. `#temp-pill` takes `.cold`/`.heat` and **performs
+  the correct action itself** — under pressure you shouldn't have to work out whether you need
+  Warm or Cool, which is exactly what two permanent keys asked of you. Keying the pills off the
+  same thresholds as the orb pulses means the pill, the orb and the distress clock are one signal.
+  The More key still carries the red vet badge dot.
+  **GOTCHA:** a pill sits exactly where the speech chip goes, so `renderVisibility()` sets
+  `#app.has-pill` and the chip drops to 124px — the same collision the sleep pill already solved.
+  The vet pill silently had this bug for its whole life; nobody saw it because a sick pet is rare.
+  Any new pill must keep `translateX(-50%)` in its transform too, since `pillPulse` re-applies it
+  every frame and a pill without it snaps to the left edge mid-animation.
 - **Dev tray** (`#dev-tray`): Test Tools live BELOW the slab, not on the toy. Hidden entirely at
   phone widths (there is no "below the slab" when the slab is the whole screen); a
   `#dev-tray:has(#test-tools:not(.hidden))` rule pulls it back when dev mode is on.

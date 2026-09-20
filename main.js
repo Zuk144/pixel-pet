@@ -1089,6 +1089,9 @@ const companionEl = document.getElementById("companion");
 const companionScreenEl = document.getElementById("companion-screen");
 const foldCloseEl = document.getElementById("fold-close");
 const vetPillEl = document.getElementById("vet-pill");
+const tempPillEl = document.getElementById("temp-pill");
+const tempPillTextEl = document.getElementById("temp-pill-text");
+const cleanPillEl = document.getElementById("clean-pill");
 const sleepPillEl = document.getElementById("sleep-pill");
 const sleepTextEl = document.getElementById("sleep-text");
 const feedMenuEl = document.getElementById("feed-menu");
@@ -1151,6 +1154,20 @@ function floatEmoji(emoji) {
   setTimeout(() => el.remove(), 1300);
 }
 
+// Which single contextual pill (if any) the world is showing, worst first.
+// Keyed off the SAME thresholds as the orb pulses and the distress clock, so
+// the pill, the orb and the timer that leads to sick/runaway all agree.
+// Nothing nags while asleep - weather events don't spawn at night anyway, and
+// the whole sleep design says leave it be.
+function pickContextPill() {
+  if (state.ranAway || state.stage === "egg") return null;
+  if (state.sick) return "vet";
+  if (isAsleep()) return null;
+  if (tempDiscomfortAmount() > 0) return "temp";
+  if (state.cleanliness <= WARN_CLEAN) return "clean";
+  return null;
+}
+
 function renderVisibility() {
   appEl.classList.toggle("stage-egg", state.stage === "egg" && !state.ranAway);
   appEl.classList.toggle("ranaway", state.ranAway);
@@ -1158,8 +1175,25 @@ function renderVisibility() {
   vetHealthyEl.classList.toggle("hidden", state.sick);
   runawayOverlayEl.classList.toggle("hidden", !state.ranAway);
   vetBadgeEl.classList.toggle("hidden", !state.sick);
-  // contextual: the vet pill only surfaces over the world when care is needed
-  vetPillEl.classList.toggle("hidden", !state.sick || state.ranAway || state.stage === "egg");
+  // Contextual pills replace the old Warm/Cool/Clean keys. The world asks for
+  // what it needs instead of five permanent buttons waiting to be needed.
+  // Exactly ONE shows at a time, worst-first - three pills stacked on the same
+  // 66px line would overlap, and a pet that is sick in a heatwave should be
+  // told about the vet, not the weather.
+  const pill = pickContextPill();
+  // Any pill sits exactly where the speech chip goes, so the chip drops below
+  // it - the same collision the sleep pill already had to solve. The vet pill
+  // never did, it just went unnoticed because a sick pet is rare.
+  appEl.classList.toggle("has-pill", pill !== null);
+  vetPillEl.classList.toggle("hidden", pill !== "vet");
+  tempPillEl.classList.toggle("hidden", pill !== "temp");
+  cleanPillEl.classList.toggle("hidden", pill !== "clean");
+  if (pill === "temp") {
+    const cold = state.temp < comfortWindow().min;
+    tempPillEl.classList.toggle("cold", cold);
+    tempPillEl.classList.toggle("heat", !cold);
+    tempPillTextEl.textContent = cold ? "❄️ Cold snap" : "🔥 Heat wave";
+  }
 
   // Sleep: quiet the whole UI down so it reads "leave me be". The vet pill
   // still wins if the pet is ill - that always needs you.
@@ -2345,10 +2379,33 @@ document.getElementById("more-btn").addEventListener("click", () => {
   setRoom(activeRoom === "home" ? lastSheetRoom : "home");
 });
 
-// Feed key pops the flyout; picking a food (or tapping anywhere else) closes it.
-document.getElementById("feed-btn").addEventListener("click", (e) => {
-  e.stopPropagation();
-  feedMenuEl.classList.toggle("hidden");
+// Feeding is the heartbeat of the game - hunger warns first ~90% of the time -
+// so a plain tap just feeds a Meal. Hold for the Snack/Feast flyout. This makes
+// the most frequent action in the game one tap instead of two.
+const feedBtnEl = document.getElementById("feed-btn");
+const FEED_HOLD_MS = 450;
+let feedHold = null;
+
+// NOT stopPropagation: the global pointerdown that zooms the pet back to
+// closeup should still fire, so feeding brings it to you like any other tap.
+// The flyout's own close handler already ignores taps inside #feed-btn.
+feedBtnEl.addEventListener("pointerdown", () => {
+  feedHold = setTimeout(() => {
+    feedHold = null; // consumed by the hold, so pointerup must not also feed
+    feedMenuEl.classList.remove("hidden");
+  }, FEED_HOLD_MS);
+});
+feedBtnEl.addEventListener("pointerup", () => {
+  if (!feedHold) return; // the hold already opened the flyout
+  clearTimeout(feedHold);
+  feedHold = null;
+  feed(30); // Meal
+  triggerSquish();
+  render();
+});
+feedBtnEl.addEventListener("pointercancel", () => {
+  clearTimeout(feedHold);
+  feedHold = null;
 });
 document.addEventListener("pointerdown", (e) => {
   if (!feedMenuEl.contains(e.target) && !document.getElementById("feed-btn").contains(e.target)) {
@@ -2357,6 +2414,21 @@ document.addEventListener("pointerdown", (e) => {
 });
 
 vetPillEl.addEventListener("click", () => setRoom("vet"));
+
+// The temp pill does the RIGHT thing on its own - under pressure you shouldn't
+// have to work out whether you need Warm or Cool, which is what two permanent
+// keys asked of you.
+tempPillEl.addEventListener("click", () => {
+  if (state.temp < comfortWindow().min) warmUp();
+  else coolDown();
+  triggerSquish();
+  render();
+});
+cleanPillEl.addEventListener("click", () => {
+  clean();
+  triggerSquish();
+  render();
+});
 
 for (const btn of document.querySelectorAll(".food-btn")) {
   btn.addEventListener("click", () => {
