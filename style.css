@@ -1,0 +1,1849 @@
+:root {
+  /* Candy backdrop the toy sits on */
+  --page-1: #ffe1e8;
+  --page-2: #ffedcb;
+  /* Cream plastic toy body */
+  --shell: #fff8ec;
+  --shell-2: #ffeecf;
+  --shell-edge: #f0cf94;
+  /* Retro LCD screen + its bezel */
+  --screen: #b6cf9e;
+  --bezel: #4a5a44;
+  --bezel-dark: #33402f;
+  /* Warm ink */
+  --ink: #5a4a3a;
+  --ink-soft: #a08a6d;
+  /* Inset surfaces */
+  --card: #fbeacb;
+  --track: #ecd7ac;
+  /* Companion controller: a cooler mint-cream gadget vs the warm pet shell,
+     with a dark amber-readout LCD (pager/calculator vibe). */
+  --comp: #e9f0dc;
+  --comp-2: #d8e4c2;
+  --comp-edge: #b9cb92;
+  --lcd-bg: #2a2b24;
+  --lcd-amber: #ffb552;
+  /* Candy button colors (each with a darker "underside" for 3D depth) */
+  --pink: #ff90a8; --pink-dk: #df6a84;
+  --mint: #74cc9c; --mint-dk: #4fa87b;
+  --sky: #78c6e6; --sky-dk: #4c9ec2;
+  --butter: #ffcd5b; --butter-dk: #e2ad38;
+  --coral: #ff9d76; --coral-dk: #e37a53;
+  --grape: #bd93e2; --grape-dk: #9a6cc6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  padding: 18px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: linear-gradient(160deg, var(--page-1), var(--page-2)) fixed;
+  font-family: ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN",
+    "Quicksand", "Varela Round", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--ink);
+}
+
+/* The slab: one phone-like face. The world IS the app; controls float over
+   it on frosted glass. */
+#app {
+  position: relative;
+  width: min(420px, 100%);
+  height: min(78vh, 760px);
+  min-height: 480px;
+  border-radius: 42px;
+  /* MUST be clip, not hidden: the closed sheet's translateY(105%) parks it
+     ~131px below the slab, and an overflow:hidden box is still scrollable
+     programmatically - so focusing anything inside (the name field, a tab)
+     let the browser scroll the top bar off the slab for good. clip never
+     makes a scrollport. hidden stays first as the pre-Safari-16 fallback. */
+  overflow: hidden;
+  overflow: clip;
+  background: var(--bezel-dark);
+  box-shadow:
+    inset 0 0 0 4px rgba(20, 26, 18, 0.9),
+    inset 0 0 0 6px rgba(255, 255, 255, 0.06),
+    0 24px 60px rgba(130, 80, 45, 0.45);
+  text-align: center;
+}
+
+h1 {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 2px 0 0;
+}
+
+#pet-name {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0 0 8px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+#badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+#stage-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--mint);
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 999px;
+  box-shadow: 0 2px 0 var(--mint-dk);
+}
+
+#bank-badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 800;
+  background: var(--butter);
+  color: #6a4e12;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 0 var(--butter-dk);
+}
+
+#bank-badge:hover {
+  filter: brightness(1.05);
+}
+
+#bank-badge.ding {
+  animation: bankDing 0.4s ease-out;
+}
+
+@keyframes bankDing {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+#dev-badge {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  background: #b6494f;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+/* The world fills the whole slab; pet stays flex-centered within it. */
+#screen {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 35%, #c6dcae, var(--screen));
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#pet {
+  font-size: 104px;
+  z-index: 1;
+  transition: transform 0.15s ease;
+}
+
+#pet.egg-clickable {
+  cursor: pointer;
+}
+
+#pet-canvas {
+  z-index: 1;
+  image-rendering: pixelated; /* stays crisp at the big closeup scale */
+}
+
+/* The pet's little world, painted behind everything on the screen */
+#scene-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+/* Sick throb via filter, NOT transform — the pet's position/scale rides the
+   inline transform, and a transform animation would clobber it. */
+#pet.sick,
+#pet-canvas.sick {
+  animation: sickPulse 1s ease-in-out infinite;
+}
+
+@keyframes sickPulse {
+  0%, 100% { filter: none; }
+  50% { filter: saturate(0.45) brightness(0.82); }
+}
+
+#pet-message {
+  position: absolute;
+  top: 76px; /* clears the floating top bar */
+  left: 0;
+  right: 0;
+  font-size: 13px;
+  font-weight: bold;
+  color: #24312a;
+  z-index: 2;
+}
+
+.floating-credit {
+  position: absolute;
+  bottom: 45%;
+  font-size: 16px;
+  font-weight: 700;
+  color: #a8790f;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  z-index: 3;
+  pointer-events: none;
+  animation: floatUpFade 1.4s ease-out forwards;
+}
+
+@keyframes floatUpFade {
+  0% { opacity: 0; transform: translateY(0); }
+  15% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-60px); }
+}
+
+#poop-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.poop {
+  position: absolute;
+  font-size: 26px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  line-height: 1;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
+}
+
+#stats {
+  margin-top: 16px;
+  text-align: left;
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.stat-icon {
+  font-size: 20px;
+  width: 26px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.bar {
+  flex: 1;
+  height: 16px;
+  background: var(--track);
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 3px rgba(150, 110, 60, 0.25);
+}
+
+.fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  transition: width 0.3s ease, background 0.2s linear;
+}
+
+.fill.hunger {
+  background: linear-gradient(180deg, #7fd89f, var(--mint));
+}
+
+.fill.clean {
+  background: linear-gradient(180deg, #94d1ee, var(--sky));
+}
+
+.fill.temp {
+  background: var(--butter);
+}
+
+/* ---- Compact temperature strip (always visible) ----
+   Not a fill-from-left bar - a banded track: a green zone shows the pet's
+   comfort window, a solid marker shows its current temp, a faint dashed
+   tick shows where the outside ambient is pulling it. */
+.temp-band-track {
+  position: relative;
+  overflow: visible;
+  background: linear-gradient(to right, #4a90d9, #d9d9d9 50%, #d9534f);
+}
+
+.temp-comfort-band {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: #4caf7d;
+  border-radius: 3px;
+}
+
+.temp-marker {
+  position: absolute;
+  top: -3px;
+  width: 4px;
+  height: 18px;
+  margin-left: -2px;
+  background: #5a4a3a;
+  border-radius: 2px;
+  transition: left 0.3s ease;
+}
+
+.temp-ambient-tick {
+  position: absolute;
+  top: -2px;
+  width: 2px;
+  height: 16px;
+  margin-left: -1px;
+  border-left: 2px dashed rgba(36, 49, 58, 0.5);
+  transition: left 0.3s ease;
+}
+
+/* ---- Thermostat dial (Home room) ----
+   A real thermostat look: a ring colored cold->comfortable->hot by this
+   pet's own comfort window, with a needle at its current temp. Clever
+   beats a bar here because the room is literally called "Thermostat". */
+#thermo-widget {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 6px;
+}
+
+#thermo-dial {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  flex-shrink: 0;
+}
+
+#thermo-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  transition: background 0.3s ease;
+}
+
+#thermo-needle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  z-index: 2;
+  transition: transform 0.3s ease;
+}
+
+.thermo-needle-dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  top: -48px;
+  left: -5px;
+  background: #5a4a3a;
+  border: 2px solid #fff8ec;
+  border-radius: 50%;
+}
+
+.thermo-center {
+  position: absolute;
+  inset: 14px;
+  z-index: 1;
+  background: #fff8ec;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#thermo-emoji {
+  font-size: 26px;
+  line-height: 1;
+}
+
+#thermo-temp-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #8a7660;
+  margin-top: 2px;
+}
+
+#thermo-info {
+  flex: 1;
+  min-width: 0;
+}
+
+#thermo-status {
+  font-size: 13px;
+  font-weight: 700;
+  color: #5a4a3a;
+  margin-bottom: 4px;
+}
+
+#thermo-outside {
+  font-size: 11px;
+  color: #a89574;
+  line-height: 1.4;
+}
+
+#weather-toggle-btn {
+  font-size: 12px;
+  background: var(--grape);
+  box-shadow: 0 4px 0 var(--grape-dk);
+}
+#weather-toggle-btn:active {
+  box-shadow: 0 0 0 var(--grape-dk);
+}
+
+#weather-toggle-btn.enabled {
+  background: var(--mint);
+  box-shadow: 0 4px 0 var(--mint-dk);
+}
+#weather-toggle-btn.enabled:active {
+  box-shadow: 0 0 0 var(--mint-dk);
+}
+
+.temp-trend {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+#room-nav {
+  margin-top: 18px;
+  display: flex;
+  gap: 5px;
+}
+
+.room-tab {
+  position: relative;
+  flex: 1;
+  padding: 7px 2px 6px;
+  font-size: 9px;
+  font-weight: 700;
+  background: var(--card);
+  color: var(--ink-soft);
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 2px 0 var(--shell-edge);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.room-tab:hover {
+  filter: brightness(1.03);
+}
+
+.room-tab.active {
+  background: var(--pink);
+  color: #fff;
+  box-shadow: 0 3px 0 var(--pink-dk);
+  transform: translateY(-2px);
+}
+
+.badge {
+  position: absolute;
+  top: 0;
+  right: 3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ff5a5f;
+  border: 1.5px solid #fff;
+}
+
+.room {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Chunky candy buttons with a solid colored "underside" that compresses
+   when pressed - the tactile toy feel. Each key action gets its own color;
+   the shared rule sets the shape + the default (coral). */
+.room button {
+  flex: 1 1 calc(50% - 5px);
+  padding: 12px 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--coral);
+  border: none;
+  border-radius: 18px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 var(--coral-dk);
+  transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.1s ease;
+}
+
+.room button:hover {
+  filter: brightness(1.05);
+}
+
+.room button:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 var(--coral-dk);
+}
+
+.room button small {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.92;
+  margin-top: 1px;
+}
+
+/* .room .food-btn (two classes) outranks the .room button base rule. */
+.room .food-btn { background: var(--butter); box-shadow: 0 4px 0 var(--butter-dk); color: #6a4e12; }
+.room .food-btn:active { box-shadow: 0 0 0 var(--butter-dk); }
+#warm-btn { background: var(--coral); box-shadow: 0 4px 0 var(--coral-dk); }
+#warm-btn:active { box-shadow: 0 0 0 var(--coral-dk); }
+#cool-btn { background: var(--sky); box-shadow: 0 4px 0 var(--sky-dk); }
+#cool-btn:active { box-shadow: 0 0 0 var(--sky-dk); }
+#clean-btn { background: var(--mint); box-shadow: 0 4px 0 var(--mint-dk); }
+#clean-btn:active { box-shadow: 0 0 0 var(--mint-dk); }
+
+#medicine-btn {
+  background: var(--pink);
+  box-shadow: 0 4px 0 var(--pink-dk);
+}
+#medicine-btn:active {
+  box-shadow: 0 0 0 var(--pink-dk);
+}
+
+.full-width {
+  flex-basis: 100%;
+}
+
+.room-section {
+  flex-basis: 100%;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  text-align: left;
+  margin: 6px 0 -1px;
+}
+
+.room-section:first-child {
+  margin-top: 0;
+}
+
+.room-note {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: #a89574;
+  text-align: left;
+  margin: 0;
+}
+
+#hall-list {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.hall-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f5e2ba;
+  border-radius: 8px;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.hall-entry canvas {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+  background: #b6cf9e;
+  border-radius: 6px;
+}
+
+.hall-entry .hall-info {
+  flex: 1;
+  font-size: 11px;
+  color: #8a7660;
+  line-height: 1.45;
+}
+
+.hall-entry .hall-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #5a4a3a;
+}
+
+.hall-entry .hall-stars {
+  color: #d9a72c;
+  letter-spacing: 1px;
+}
+
+.hall-entry .hall-species {
+  color: #a89574;
+}
+
+.bank-total {
+  flex-basis: 100%;
+  font-size: 32px;
+  font-weight: 700;
+  color: #a8790f;
+  text-align: center;
+  margin: 4px 0;
+}
+
+#bank-log {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.bank-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  background: #f5e2ba;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: #5a4a3a;
+}
+
+.bank-entry-note {
+  font-size: 10px;
+  color: #a89574;
+  text-align: right;
+}
+
+#runaway-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(40, 34, 28, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+#runaway-overlay p {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff8ec;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  margin: 8px 0 14px;
+}
+
+#runaway-overlay button {
+  padding: 12px 20px;
+  background: var(--mint);
+  color: #fff;
+  font-weight: 700;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  font-size: 15px;
+  box-shadow: 0 4px 0 var(--mint-dk);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+#runaway-overlay button:hover {
+  filter: brightness(1.05);
+}
+
+#runaway-overlay button:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 var(--mint-dk);
+}
+
+/* -- The naming moment: a warm, happy overlay right when the egg hatches -- */
+#name-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 41;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 28px;
+  text-align: center;
+  background: rgba(255, 205, 91, 0.28);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+#name-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff8ec;
+  text-shadow: 0 2px 8px rgba(90, 60, 20, 0.55);
+  margin: 0 0 16px;
+}
+
+#name-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  width: 100%;
+  max-width: 260px;
+}
+
+#name-input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--ink);
+  background: var(--shell);
+  box-shadow: 0 4px 0 var(--shell-edge);
+  text-align: center;
+}
+
+#name-input:focus {
+  outline: 3px solid var(--butter);
+}
+
+#name-reroll-btn {
+  flex-shrink: 0;
+  width: 44px;
+  border: none;
+  border-radius: 16px;
+  font-size: 18px;
+  cursor: pointer;
+  background: var(--card);
+  box-shadow: 0 4px 0 var(--shell-edge);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+#name-reroll-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 var(--shell-edge);
+}
+
+#name-confirm-btn {
+  padding: 12px 22px;
+  background: var(--mint);
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 var(--mint-dk);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+#name-confirm-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 var(--mint-dk);
+}
+
+/* Dev tray: alerts + test tools live below the slab, not on the toy */
+#dev-tray {
+  width: min(420px, 100%);
+  text-align: center;
+}
+
+#alerts-btn {
+  background: none;
+  border: 1px solid #9fb0a8;
+  color: #8a7660;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+#alerts-btn:hover {
+  background: #f5e2ba;
+}
+
+#alerts-btn.enabled {
+  border-color: #4caf7d;
+  color: #2f7c53;
+}
+
+#test-tools {
+  margin-top: 14px;
+  padding: 8px;
+  border: 1px dashed #b6494f;
+  border-radius: 10px;
+  background: rgba(182, 73, 79, 0.05);
+}
+
+.test-tools-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #b6494f;
+  margin-bottom: 6px;
+}
+
+.test-tools-row {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.test-tools-row button {
+  flex: 1;
+  min-width: 40px;
+  padding: 6px 4px;
+  font-size: 12px;
+  background: #fff8ec;
+  color: #8a7660;
+  border: 1px solid #cdd6d1;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.test-tools-row button:hover {
+  background: #f5e2ba;
+}
+
+.speed-btn.active {
+  background: #b6494f;
+  color: #fff;
+  border-color: #b6494f;
+}
+
+#skip-stage-btn {
+  flex: 1.6 !important;
+}
+
+/* The Hall of Fame, Bank, and Shop are about past pets and persistent
+   stashes, not the current one - they stay reachable even while today's pet
+   is still an egg. Home (care), Gear (this pet's build), and Vet (treating
+   the current pet) don't apply yet, so they're dimmed. */
+#app.stage-egg #stats,
+#app.stage-egg #room-home,
+#app.stage-egg #room-gear,
+#app.stage-egg #room-vet,
+#app.ranaway #stats,
+#app.ranaway #room-nav,
+#app.ranaway .room,
+#app.ranaway #poop-layer {
+  display: none;
+}
+
+#app.stage-egg .room-tab:not([data-room="hall"]):not([data-room="bank"]):not([data-room="shop"]) {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* ---- Character sheet ---- */
+#sheet-head {
+  flex-basis: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+
+#sheet-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #5a4a3a;
+}
+
+#sheet-hp {
+  font-size: 12px;
+  font-weight: 700;
+  color: #b6494f;
+}
+
+#stat-block {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-line {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  text-align: left;
+}
+
+.stat-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stat-name {
+  width: 80px;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.stat-track {
+  flex: 1;
+  height: 8px;
+  background: #ecd7ac;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.stat-fill {
+  display: block;
+  height: 100%;
+  background: #6a8f7a;
+}
+
+.stat-value {
+  width: 54px;
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 700;
+  color: #5a4a3a;
+}
+
+.stat-bonus {
+  color: #4caf7d;
+  font-size: 11px;
+}
+
+/* ---- Paper doll ---- */
+#paperdoll {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 4px 0;
+}
+
+.doll-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#doll-preview {
+  width: 100px;
+  height: 100px;
+  background: #b6cf9e;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+#doll-anatomy-row {
+  flex-basis: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2px;
+}
+
+/* #room-gear prefix beats the generic ".room button" rule's specificity -
+   these buttons need entirely custom square dimensions, not the room
+   default flex/padding/font sizing. */
+#room-gear .slot-btn {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  background: #f5e2ba;
+  color: inherit;
+  border: 2px dashed #b7c2bc;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+}
+
+#room-gear .slot-btn:hover {
+  background: #ecd7ac;
+}
+
+#room-gear .slot-btn.selectable {
+  border-style: solid;
+  border-color: #4caf7d;
+}
+
+#room-gear .slot-btn.drop-hover {
+  background: #cdeedb;
+  border-color: #2f7c53;
+}
+
+.slot-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 18px;
+  opacity: 0.6;
+}
+
+#room-gear .slot-empty small {
+  display: block;
+  font-size: 10px;
+  font-weight: normal;
+  color: #8a7660;
+  opacity: 1;
+}
+
+.item-icon {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  background: #fff8ec;
+  border: 3px solid #d9c39c;
+  border-radius: 8px;
+}
+
+#gear-hint {
+  flex-basis: 100%;
+  text-align: center;
+  margin: 0 0 4px;
+}
+
+/* ---- Backpack ---- */
+#backpack-grid {
+  flex-basis: 100%;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.backpack-cell {
+  aspect-ratio: 1;
+  background: #f5e2ba;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.backpack-cell:has(.item-icon) {
+  border-color: transparent;
+  padding: 3px;
+}
+
+.backpack-cell.selected {
+  border-color: #4caf7d;
+}
+
+.backpack-cell.drop-hover {
+  background: #cdeedb;
+}
+
+/* ---- Drag ghost ---- */
+.drag-ghost {
+  position: fixed;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  background: #fff8ec;
+  border: 3px solid #d9c39c;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  pointer-events: none;
+  z-index: 999;
+  opacity: 0.9;
+}
+
+/* ---- Shop ---- */
+#shop-grid {
+  flex-basis: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.shop-card {
+  background: #f5e2ba;
+  border-radius: 10px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.shop-card .item-icon {
+  width: 44px;
+  height: 44px;
+}
+
+.shop-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #5a4a3a;
+  line-height: 1.2;
+}
+
+.shop-rarity {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.shop-stats {
+  font-size: 10px;
+  font-weight: 700;
+  color: #4caf7d;
+  line-height: 1.3;
+}
+
+#room-shop .shop-buy-btn {
+  flex: none;
+  width: 100%;
+  padding: 7px 4px;
+  font-size: 12px;
+  font-weight: 800;
+  background: var(--mint);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 var(--mint-dk);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+#room-shop .shop-buy-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 var(--mint-dk);
+}
+
+#room-shop .shop-buy-btn:disabled {
+  background: #d8c9ab;
+  box-shadow: 0 3px 0 #c3b491;
+  cursor: not-allowed;
+}
+
+.shop-sold {
+  opacity: 0.6;
+}
+
+.sold-icon {
+  border-color: #b7c2bc !important;
+}
+
+.shop-sold-label {
+  font-size: 11px;
+  color: #8a978f;
+}
+
+.stat-blurb {
+  font-size: 10px;
+  color: #8a978f;
+}
+
+/* ============================================================
+   TOY REDESIGN — the app *is* the handheld device.
+   Status lives on the bezel (orbs), actions are chunky pad keys,
+   nav is a dock of round buttons. Appended last so equal-
+   specificity overrides here win over earlier rules.
+   ============================================================ */
+
+/* -- Compact header: name + chips in one row -- */
+/* -- Top bar: one frosted pill floating over the sky -- */
+#top-bar {
+  position: absolute;
+  top: 14px;
+  left: 12px;
+  right: 12px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 24px;
+  background: rgba(255, 248, 236, 0.6);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow: 0 4px 18px rgba(70, 50, 25, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+#top-info {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  flex: 1;
+}
+
+#top-bar #pet-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Flexbox lets an overflow:hidden item shrink toward 0 by default - without
+     a floor, a longer player-typed name (vs. the short curated PET_NAMES) can
+     get crushed to a single letter. This guarantees a readable chunk + "…". */
+  min-width: 52px;
+  flex-shrink: 1;
+}
+
+#stage-badge {
+  flex-shrink: 0;
+}
+
+/* -- LCD: faint scanlines over the whole slab, kept for the retro soul -- */
+#screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(60, 80, 50, 0.05) 0 2px, transparent 2px 4px);
+}
+
+/* -- Pet message as a little speech chip -- */
+#pet-message:not(:empty) {
+  margin: 0 auto;
+  width: max-content;
+  max-width: 90%;
+  background: rgba(255, 253, 244, 0.94);
+  border-radius: 13px;
+  padding: 5px 12px 4px;
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: 0 2px 0 rgba(90, 74, 58, 0.25);
+}
+
+/* Speech chip: alien glyphs + a mood emoji (feeling always reads), with a
+   faint "tap: translate" hint under it. */
+.say-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.say-glyphs {
+  font-size: 15px;
+  letter-spacing: 1px;
+  color: #6a5340;
+}
+
+.say-en {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.say-emo {
+  font-size: 14px;
+}
+
+.say-hint {
+  display: block;
+  text-align: center;
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  color: rgba(120, 96, 70, 0.65);
+  margin-top: 1px;
+}
+
+.float-emoji {
+  position: absolute;
+  bottom: 42%;
+  font-size: 22px;
+  z-index: 3;
+  pointer-events: none;
+  animation: floatUpFade 1.3s ease-out forwards;
+}
+
+/* -- Status orbs: small rings living in the top bar -- */
+#status-strip {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.status-orb {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  background: conic-gradient(var(--ring, #74cc9c) calc(var(--fill, 0) * 1%), rgba(90, 74, 58, 0.16) 0);
+  box-shadow: 0 1px 3px rgba(70, 50, 25, 0.25);
+  transition: transform 0.1s ease;
+}
+
+.status-orb::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: var(--bezel-dark);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.orb-icon {
+  position: relative;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.status-orb:active {
+  transform: scale(0.92);
+}
+
+.status-orb.alert {
+  animation: orbPulse 1.1s ease-in-out infinite;
+}
+
+@keyframes orbPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.14); }
+}
+
+.status-orb.dormant {
+  filter: grayscale(0.9);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* -- Contextual vet pill: only appears when the pet is sick -- */
+#vet-pill {
+  position: absolute;
+  top: 66px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 21;
+  border: none;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  background: rgba(224, 82, 82, 0.92);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 14px rgba(180, 40, 40, 0.4);
+  animation: pillPulse 1.1s ease-in-out infinite;
+}
+
+@keyframes pillPulse {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  50% { transform: translateX(-50%) scale(1.07); }
+}
+
+/* -- Sleep: the "leave it be" signal. Calm, no pulse, no urgency. -- */
+#sleep-pill {
+  position: absolute;
+  top: 66px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 21;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #e8ecff;
+  background: rgba(30, 38, 78, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(10, 14, 40, 0.45);
+  animation: sleepBreathe 3.6s ease-in-out infinite;
+}
+
+/* A slow breath, so it feels asleep rather than alerting. */
+@keyframes sleepBreathe {
+  0%, 100% { opacity: 0.78; }
+  50% { opacity: 1; }
+}
+
+/* The sleep pill lives where the speech chip normally sits, so while it's
+   showing the chip drops below it instead of overlapping. */
+#app.asleep #pet-message {
+  top: 124px;
+}
+
+#sleep-pill {
+  white-space: nowrap; /* never wrap into the speech chip below */
+}
+
+/* The dock goes quiet while the pet sleeps - still usable, but it reads as
+   "you don't need to do anything right now". */
+#app.asleep #dock {
+  opacity: 0.45;
+  filter: saturate(0.55);
+  transition: opacity 0.6s ease, filter 0.6s ease;
+}
+
+#app.asleep #dock:hover {
+  opacity: 0.9;
+}
+
+/* -- Stat popover (detail sheet) -- */
+#popover-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(96, 62, 38, 0.4);
+  z-index: 50;
+  cursor: pointer;
+}
+
+#stat-popover {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 302px;
+  background: linear-gradient(180deg, var(--shell), var(--shell-2));
+  border-radius: 26px;
+  padding: 20px 18px 18px;
+  z-index: 51;
+  text-align: left;
+  box-shadow: 0 8px 0 var(--shell-edge), 0 26px 60px rgba(110, 70, 35, 0.5);
+  animation: popIn 0.16s ease;
+}
+
+@keyframes popIn {
+  from { transform: translate(-50%, -46%); opacity: 0; }
+}
+
+#popover-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--ink-soft);
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 2px 0 var(--shell-edge);
+}
+
+.pop-title {
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.pop-note {
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin: 10px 0 0;
+}
+
+.pop-section .bar {
+  width: 100%;
+}
+
+.pop-section .temp-band-track {
+  margin: 8px 0 4px;
+}
+
+#stat-popover #thermo-widget {
+  margin-top: 14px;
+}
+
+#stat-popover #weather-toggle-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 11px;
+  border: none;
+  border-radius: 16px;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+#stat-popover #weather-toggle-btn:active {
+  transform: translateY(3px);
+}
+
+/* -- Dock: round icon keys like the buttons under a GigaPet screen -- */
+#room-nav {
+  margin-top: 16px;
+  gap: 6px;
+}
+
+.room-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 8px 0 6px;
+  font-size: 18px;
+  border-radius: 18px;
+  box-shadow: 0 3px 0 var(--shell-edge);
+}
+
+.room-tab small {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.room-tab.active {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 0 var(--pink-dk);
+}
+
+/* -- Home action pad: 3x2 grid of chunky keys, zero scrolling -- */
+.room .pad-btn {
+  flex: 1 1 calc(33.333% - 6px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 13px 4px 10px;
+  border-radius: 20px;
+}
+
+.pad-emoji {
+  font-size: 27px;
+  line-height: 1;
+}
+
+.room .pad-btn small {
+  font-size: 11px;
+  font-weight: 800;
+  margin-top: 0;
+}
+
+/* ============================================================
+   CARE DOCK — the core loop, always visible, floating on frosted glass.
+   Feed pops a mini flyout; ••• slides up the sheet with everything else.
+   ============================================================ */
+#dock {
+  position: absolute;
+  bottom: 14px;
+  left: 12px;
+  right: 12px;
+  z-index: 20;
+  display: flex;
+  gap: 7px;
+  padding: 9px;
+  border-radius: 28px;
+  background: rgba(255, 248, 236, 0.6);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow: 0 8px 26px rgba(70, 50, 25, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.dock-btn {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 9px 0 7px;
+  border: none;
+  border-radius: 19px;
+  cursor: pointer;
+  color: #fff;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.dock-emoji { font-size: 22px; line-height: 1; }
+
+.dock-btn small {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.dock-btn.feed { background: var(--butter); color: #6a4e12; box-shadow: 0 4px 0 var(--butter-dk); }
+.dock-btn.warm { background: var(--coral); box-shadow: 0 4px 0 var(--coral-dk); }
+.dock-btn.cool { background: var(--sky); box-shadow: 0 4px 0 var(--sky-dk); }
+.dock-btn.clean { background: var(--mint); box-shadow: 0 4px 0 var(--mint-dk); }
+.dock-btn.more { background: rgba(90, 74, 58, 0.82); box-shadow: 0 4px 0 rgba(50, 40, 30, 0.9); }
+
+.dock-btn:active {
+  transform: translateY(4px);
+  box-shadow: none !important;
+}
+
+/* Feed flyout: a little frosted tray above the dock's Feed key */
+#feed-menu {
+  position: absolute;
+  bottom: 104px;
+  left: 12px;
+  z-index: 22;
+  display: flex;
+  gap: 7px;
+  padding: 9px;
+  border-radius: 22px;
+  background: rgba(255, 248, 236, 0.88);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow: 0 10px 30px rgba(70, 50, 25, 0.3);
+  animation: menuPop 0.14s ease;
+}
+
+@keyframes menuPop {
+  from { transform: translateY(8px); opacity: 0; }
+}
+
+#feed-menu .pad-btn {
+  width: 74px;
+  background: var(--butter);
+  color: #6a4e12;
+  border: none;
+  border-radius: 17px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 var(--butter-dk);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+#feed-menu .pad-btn:active {
+  transform: translateY(4px);
+  box-shadow: none;
+}
+
+/* ============================================================
+   THE SHEET — slides up over the world with Gear/Shop/Vet/Bank/Hall.
+   Reuses the #companion id so all the room logic in main.js stays put.
+   ============================================================ */
+#companion {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  max-height: 76%;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+  border-radius: 30px 30px 0 0;
+  background: rgba(255, 248, 236, 0.94);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  box-shadow: 0 -12px 40px rgba(70, 50, 25, 0.35);
+  transform: translateY(105%);
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0.25, 1);
+}
+
+#companion.open {
+  transform: translateY(0);
+}
+
+/* Head: grabber-style close + amber readout strip */
+#companion-head {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+
+#companion-screen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  background: var(--lcd-bg);
+  border-radius: 10px;
+  color: var(--lcd-amber);
+  font-family: "SF Mono", ui-monospace, "Courier New", monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-shadow: 0 0 6px rgba(255, 181, 82, 0.55);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.55);
+  min-height: 32px;
+}
+
+#fold-close {
+  width: 34px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--ink-soft);
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 2px 0 var(--shell-edge);
+}
+
+#fold-close:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+/* Room content scrolls inside the sheet */
+#companion-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
+}
+
+#companion-body > .room {
+  margin-top: 0;
+  animation: unfold 0.24s ease both;
+}
+
+@keyframes unfold {
+  from { transform: scaleY(0.55); opacity: 0; transform-origin: top; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+
+/* Mode tabs: a segmented row pinned at the top of the sheet */
+#companion #room-nav {
+  margin: 0 0 10px;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+#companion .room-tab {
+  background: #fbf6e6;
+  box-shadow: 0 3px 0 var(--shell-edge);
+}
+
+#companion .room-tab.active {
+  background: var(--pink);
+  color: #fff;
+  box-shadow: 0 5px 0 var(--pink-dk);
+  transform: translateY(-3px);
+}
+
+/* Ran-away: controls are irrelevant, hide them with the overlay. */
+#app.ranaway #companion,
+#app.ranaway #dock,
+#app.ranaway #feed-menu,
+#app.ranaway #vet-pill { display: none; }
+
+/* Egg stage: no feeding/cleaning yet — only the More key applies. */
+#app.stage-egg #feed-btn,
+#app.stage-egg #warm-btn,
+#app.stage-egg #cool-btn,
+#app.stage-egg #clean-btn {
+  filter: grayscale(0.8);
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* ---- Item hover bubble (backpack) ---- */
+#item-tip {
+  position: fixed;
+  z-index: 90;
+  transform: translate(-50%, -100%);
+  min-width: 130px;
+  max-width: 190px;
+  padding: 9px 12px;
+  background: var(--lcd-bg, #2a2b24);
+  color: #f3e7cf;
+  border-radius: 12px;
+  text-align: center;
+  pointer-events: none;
+  box-shadow: 0 6px 18px rgba(60, 40, 20, 0.45);
+  animation: tipPop 0.12s ease;
+}
+
+#item-tip.below {
+  transform: translate(-50%, 0);
+}
+
+/* Little pointer notch */
+#item-tip::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  transform: translateX(-50%) rotate(45deg);
+  width: 10px;
+  height: 10px;
+  background: var(--lcd-bg, #2a2b24);
+}
+
+#item-tip.below::after {
+  bottom: auto;
+  top: -5px;
+}
+
+@keyframes tipPop {
+  from { opacity: 0; }
+}
+
+#item-tip .tip-name {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+#item-tip .tip-sub {
+  font-size: 10px;
+  color: #b7a98a;
+  margin: 1px 0 6px;
+}
+
+#item-tip .tip-stat {
+  font-size: 11px;
+  font-weight: 700;
+  color: #7fd89f;
+}
+
+#item-tip .tip-plain {
+  color: #9a8f78;
+  font-weight: 600;
+}
+
+#item-tip .tip-yield {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--lcd-amber, #ffb552);
+  margin-top: 4px;
+}

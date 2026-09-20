@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Pixel Pet</title>
+<link rel="stylesheet" href="style.css?v=48" />
+</head>
+<body>
+  <!-- The slab: one phone-like face. The world fills it edge to edge;
+       everything else floats over it on frosted glass. -->
+  <div id="app">
+    <div id="screen">
+      <canvas id="scene-canvas"></canvas>
+      <div id="poop-layer"></div>
+      <div id="pet">🥚</div>
+      <canvas id="pet-canvas" class="hidden" width="126" height="126"></canvas>
+      <div id="pet-message"></div>
+    </div>
+
+    <!-- Top bar: name + stage, status orbs, credits — all the hub info in one line -->
+    <div id="top-bar">
+      <div id="top-info">
+        <div id="pet-name" class="hidden"></div>
+        <div id="stage-badge">Egg</div>
+      </div>
+      <div id="status-strip">
+        <button class="status-orb" data-stat="food" title="Fullness"><span class="orb-icon">🍖</span></button>
+        <button class="status-orb" data-stat="clean" title="Cleanliness"><span class="orb-icon">🫧</span></button>
+        <button class="status-orb" data-stat="temp" title="Comfort"><span class="orb-icon">🌡️</span></button>
+      </div>
+      <button id="bank-badge" data-room="bank">🪙 <span id="bank-amount">0</span></button>
+    </div>
+
+    <!-- Contextual: fades in over the world only when the pet is sick -->
+    <button id="vet-pill" class="hidden">💊 Needs the vet</button>
+
+    <!-- Contextual: the "leave it be" signal while the pet sleeps -->
+    <div id="sleep-pill" class="hidden">🌙 <span id="sleep-text">Sleeping</span></div>
+
+    <!-- Feed flyout: pops above the dock's Feed key -->
+    <div id="feed-menu" class="hidden">
+      <button class="pad-btn food-btn" data-food="12" title="+12 fullness"><span class="pad-emoji">🍪</span><small>Snack</small></button>
+      <button class="pad-btn food-btn" data-food="30" title="+30 fullness"><span class="pad-emoji">🍎</span><small>Meal</small></button>
+      <button class="pad-btn food-btn" data-food="55" title="+55 fullness"><span class="pad-emoji">🍲</span><small>Feast</small></button>
+    </div>
+
+    <!-- Care dock: the core loop, always visible, zero taps deep -->
+    <div id="dock">
+      <button id="feed-btn" class="dock-btn feed"><span class="dock-emoji">🍽️</span><small>Feed</small></button>
+      <button id="warm-btn" class="dock-btn warm"><span class="dock-emoji">🔥</span><small>Warm</small></button>
+      <button id="cool-btn" class="dock-btn cool"><span class="dock-emoji">❄️</span><small>Cool</small></button>
+      <button id="clean-btn" class="dock-btn clean"><span class="dock-emoji">🧹</span><small>Clean</small></button>
+      <button id="more-btn" class="dock-btn more"><span class="dock-emoji">•••</span><small>More</small><span id="vet-badge" class="badge hidden"></span></button>
+    </div>
+
+    <!-- The sheet: slides up over the world with Gear/Shop/Vet/Bank/Hall -->
+    <div id="companion">
+      <div id="companion-head">
+        <button id="fold-close" title="Close">▾</button>
+        <div id="companion-screen" class="off"></div>
+      </div>
+
+      <div id="room-nav">
+        <button class="room-tab" data-room="gear">🎒<small>Gear</small></button>
+        <button class="room-tab" data-room="shop">🛒<small>Shop</small></button>
+        <button class="room-tab" data-room="vet">🏥<small>Vet</small></button>
+        <button class="room-tab" data-room="bank">🏦<small>Bank</small></button>
+        <button class="room-tab" data-room="hall">🏆<small>Hall</small></button>
+      </div>
+
+      <div id="companion-body">
+        <div id="room-gear" class="room hidden">
+          <div id="sheet-head">
+            <span id="sheet-title"></span>
+            <span id="sheet-hp"></span>
+          </div>
+
+          <div id="paperdoll">
+            <div class="doll-col">
+              <button class="slot-btn" data-slot="head"></button>
+              <button class="slot-btn" data-slot="ringLeft"></button>
+              <button class="slot-btn" data-slot="body"></button>
+            </div>
+            <canvas id="doll-preview" width="126" height="126"></canvas>
+            <div class="doll-col">
+              <button class="slot-btn" data-slot="face"></button>
+              <button class="slot-btn" data-slot="ringRight"></button>
+              <button class="slot-btn" data-slot="back"></button>
+            </div>
+          </div>
+          <div id="doll-anatomy-row"></div>
+          <p id="gear-hint" class="room-note">Tap a backpack item to equip it. Tap a worn slot to take it off.</p>
+
+          <div id="stat-block"></div>
+
+          <div class="room-section">Backpack</div>
+          <div id="backpack-grid"></div>
+        </div>
+
+        <div id="room-shop" class="room hidden">
+          <p id="shop-flavor" class="room-note"></p>
+          <div id="shop-grid"></div>
+          <button id="shop-refresh-btn" class="full-width">🔄 Refresh stock (15 🪙)</button>
+        </div>
+
+        <div id="room-vet" class="room hidden">
+          <button id="medicine-btn" class="hidden full-width">💊 Give Medicine</button>
+          <p id="vet-healthy" class="room-note">Buddy is in good health. Nothing to treat right now.</p>
+        </div>
+
+        <div id="room-bank" class="room hidden">
+          <div class="bank-total">🪙 <span id="bank-big-amount">0</span></div>
+          <p id="bank-flavor" class="room-note"></p>
+          <div class="room-section">Recent earnings</div>
+          <div id="bank-log"></div>
+        </div>
+
+        <div id="room-hall" class="room hidden">
+          <div class="room-section">🏆 Hall of Fame</div>
+          <p id="hall-empty" class="room-note">No pets retired yet. Raise one well and it'll earn its place here.</p>
+          <div id="hall-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="runaway-overlay" class="hidden">
+      <p id="runaway-text">💔 Buddy ran away...</p>
+      <button id="new-egg-btn">🥚 Get a New Egg</button>
+    </div>
+
+    <!-- The naming moment: shown once, right when the egg hatches -->
+    <div id="name-overlay" class="hidden">
+      <p id="name-title">🐣 It's here! What should we call your new friend?</p>
+      <div id="name-row">
+        <input id="name-input" type="text" maxlength="16" autocomplete="off" />
+        <button id="name-reroll-btn" title="Suggest another name">🎲</button>
+      </div>
+      <button id="name-confirm-btn">That's the name! 💛</button>
+    </div>
+
+    <div id="popover-backdrop" class="hidden"></div>
+    <div id="stat-popover" class="hidden">
+      <button id="popover-close">✕</button>
+      <div class="pop-section hidden" data-pop="food">
+        <div class="pop-title">🍖 Fullness</div>
+        <div class="bar"><div id="hunger-fill" class="fill hunger"></div></div>
+        <p class="pop-note">Feed from the dock: Snack +12 · Meal +30 · Feast +55</p>
+      </div>
+      <div class="pop-section hidden" data-pop="clean">
+        <div class="pop-title">🫧 Cleanliness</div>
+        <div class="bar"><div id="clean-fill" class="fill clean"></div></div>
+        <p class="pop-note">Tap poops on the screen, or Clean from the dock.</p>
+      </div>
+      <div class="pop-section hidden" data-pop="temp">
+        <div class="pop-title">🌡️ Comfort</div>
+        <div class="bar temp-band-track" id="temp-band-track">
+          <div id="temp-comfort-band" class="temp-comfort-band"></div>
+          <div id="temp-ambient-tick" class="temp-ambient-tick"></div>
+          <div id="temp-marker" class="temp-marker"></div>
+        </div>
+        <div id="thermo-widget">
+          <div id="thermo-dial">
+            <div id="thermo-ring"></div>
+            <div id="thermo-needle"><div class="thermo-needle-dot"></div></div>
+            <div class="thermo-center">
+              <div id="thermo-emoji">🙂</div>
+              <div id="thermo-temp-label"></div>
+            </div>
+          </div>
+          <div id="thermo-info">
+            <div id="thermo-status"></div>
+            <div id="thermo-outside"></div>
+          </div>
+        </div>
+        <button id="weather-toggle-btn">📍 Use my real local weather</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dev tray: sits below the slab, not part of the toy -->
+  <div id="dev-tray">
+    <button id="alerts-btn">🔔 Enable Alerts</button>
+
+    <div id="test-tools" class="hidden">
+      <div class="test-tools-label">🧪 Test Tools · time speed</div>
+      <div class="test-tools-row">
+        <button class="speed-btn" data-speed="1">1×</button>
+        <button class="speed-btn" data-speed="10">10×</button>
+        <button class="speed-btn" data-speed="100">100×</button>
+        <button class="speed-btn" data-speed="1000">1000×</button>
+      </div>
+      <div class="test-tools-row">
+        <button id="skip-stage-btn">⏭ Skip stage</button>
+        <button id="give-item-btn">🎁 Random item</button>
+        <button id="add-credits-btn">🪙 +100</button>
+      </div>
+      <div class="test-tools-row">
+        <button class="scene-jump-btn" data-scene="meadow">🌳 Meadow</button>
+        <button class="scene-jump-btn" data-scene="beach">🏖️ Beach (reroll)</button>
+        <button class="scene-jump-btn" data-scene="cave">💎 Cave</button>
+        <button class="scene-jump-btn" data-scene="ship">🚀 Ship</button>
+        <button class="scene-jump-btn" data-scene="room">🛋️ Room</button>
+      </div>
+      <div class="test-tools-row">
+        <button id="vignette-btn" class="full-width">🎬 Next vignette (in current scene)</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="creature.js?v=48"></script>
+  <script src="speech.js?v=48"></script>
+  <script src="items.js?v=48"></script>
+  <script src="scenes.js?v=48"></script>
+  <script src="main.js?v=48"></script>
+</body>
+</html>

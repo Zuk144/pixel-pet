@@ -1,0 +1,11 @@
+# macOS
+.DS_Store
+._*
+
+# Editor / OS noise
+*.swp
+.idea/
+.vscode/
+
+# Nothing is built here — there is no build step, no node_modules, no lockfile.
+# If those ever appear, something has gone wrong with the "vanilla JS" rule.
