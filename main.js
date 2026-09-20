@@ -1788,7 +1788,11 @@ function currentReaction(now) {
 // here as a coin burst wherever the pet happens to be standing.
 const SCENE_IDLE_MS = 15000;
 const SCENE_PET_SCALE = 0.55;
-const CLOSEUP_PET_SCALE = 1.45; // pet fills the big slab when up close
+const CLOSEUP_PET_SCALE = 2.2; // pet fills the big slab when up close
+// How far the ground line sits above the dock. Raising this lifts the pet out
+// of the buttons AND shrinks the sky above it, since the pet's feet ride the
+// ground - the two things that read as "too empty" on a full-bleed phone.
+const GROUND_DOCK_GAP = 90;
 
 const sceneCanvasEl = document.getElementById("scene-canvas");
 const sceneCtx = sceneCanvasEl.getContext("2d");
@@ -1863,8 +1867,8 @@ function sizeSceneCanvas() {
   const dockEl = document.getElementById("dock");
   const dockTop = dockEl ? dockEl.getBoundingClientRect().top : 0;
   SCENE_GROUND_Y = dockTop
-    ? Math.round(dockTop - screenEl.getBoundingClientRect().top) - 33
-    : sceneCanvasEl.height - 118; // pre-layout fallback, the old constant
+    ? Math.round(dockTop - screenEl.getBoundingClientRect().top) - GROUND_DOCK_GAP
+    : sceneCanvasEl.height - (85 + GROUND_DOCK_GAP); // pre-layout fallback
 }
 window.addEventListener("resize", sizeSceneCanvas);
 

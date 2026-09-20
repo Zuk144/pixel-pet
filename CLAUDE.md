@@ -40,8 +40,14 @@ bars, no labeled form sections, no data-dense buttons.
   minus 33px**, not a hardcoded `height − 118`: full-bleed on a notched phone the safe-area inset
   lifts the dock ~34px, and the old constant put the ground *below* the dock's top edge, leaving
   the pet standing inside it. The fallback constant is still there for the pre-layout call. The
-  pet's feet ride it in BOTH modes — closeup is just bigger (`CLOSEUP_PET_SCALE` 1.45 vs
-  `SCENE_PET_SCALE` 0.55). `measureSpritePad()` scans the canvas pixels so feet (not the canvas
+  pet's feet ride it in BOTH modes — closeup is just bigger (`CLOSEUP_PET_SCALE` 2.2 vs
+  `SCENE_PET_SCALE` 0.55). **Composition is tuned by exactly two numbers**, both near the top of
+  the scene section of main.js: `CLOSEUP_PET_SCALE` (how big the pet draws up close) and
+  `GROUND_DOCK_GAP` (how far the ground line sits above the dock). Raising the gap lifts the pet
+  out of the buttons *and* shrinks the sky, since the feet ride the ground — but it thickens the
+  terrain band by the same amount, so the two trade off. Measured at 428×926, baby stage:
+  closeup 1.45/gap 33 put the pet at 16% of screen height with its head 68% down; 2.2/gap 90 puts
+  it at 24% with its head 58% down and 88px of clearance above the dock. `measureSpritePad()` scans the canvas pixels so feet (not the canvas
   edge) sit on the ground. GOTCHA: never animate `transform` on `#pet-canvas` via CSS (it clobbers
   the inline position transform — sickPulse uses `filter` for exactly this reason).
 - **Top bar**: one frosted pill (`#top-bar`) — pet name + stage chip, the three **status orbs**
