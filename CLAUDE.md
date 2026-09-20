@@ -262,6 +262,30 @@ Script load order is now: `creature.js` → `speech.js` → `items.js` → `scen
   Open-Meteo — no API key needed). Circular thermostat dial + compact always-visible band strip.
 - **Currency (Credits)**: adult pets earn passively on a per-species variable-ratio timer; health,
   gear, and stats affect the payout multiplier. Persistent Bank with a recent-earnings log.
+- **Food is a commodity** (`pantry`, `FOOD_TYPES`, `buyFood`, `bestFoodFor`, `maybeForage`):
+  Snack +12/6cr, Meal +30/15cr, Feast +55/25cr — **values identical to the old hardcoded
+  `data-food` numbers**, so charging for food changed the economy without retuning hunger at all.
+  Priced ~1cr per 2 hunger points, with a small bulk discount on Feast so it's a choice.
+  `pantry` is **three integers beside `bank`, not backpack items** — ~33 meals to raise a pet
+  cannot fit 20 shared slots, and stacking logic in a grid built for unique rarity/affix items is
+  the abstraction this project avoids. Sold in an **always-stocked Pantry row above the rotating
+  gear grid** — "the shop has no food today" while the pet starves would be a rage-quit.
+  **Feeding is still one tap**: `bestFoodFor()` picks the largest food that won't overfill (not
+  cheapest — you'd tap Snack three times on a starving pet; not biggest — you'd burn a Feast on a
+  peckish one), and hold still opens the shelf, now with owned-counts and disabled at zero. An
+  empty pantry dims the Feed key and a tap sends you to the Shop instead of failing silently.
+  **The safety net** (`maybeForage`): a foraged apple appears when `hunger >= WARN_HUNGER` AND the
+  pantry is empty AND `bank < cheapest price` AND not asleep AND none already down, at most once
+  per `FORAGE_COOLDOWN` (6h), worth exactly one Meal. It is tied to the **distress ladder, not a
+  fullness percentage** — at WARN_HUNGER the clock that leads to sick/runaway has just started,
+  and +30 drops hunger clear of the warn tier so `anyWarning()` resets it. So **poverty alone can
+  never run a pet off**, but a pet that's also dirty or cold keeps its clock ticking — the net
+  removes money as a cause of death without making anything immortal. One free Meal per 6h is
+  ~a third of subsistence: a broke player stays alive and permanently nagging, never comfortable.
+  **Measured A/B (6 trials per cell, fresh egg, empty bank):** runaways with free food vs paid food
+  were 0/6 vs 0/6 at 4-6h check-ins, 4/6 vs 3/6 at 12h, 6/6 vs 6/6 at 24h — i.e. **charging for
+  food does not measurably change survival**; the 12h/24h deaths are the distress ladder doing its
+  documented job and happen identically either way. Re-run that A/B before changing any price.
 - **Ground coins — the return ritual** (`groundItems`, `spawnReturnCoins`, `collectGroundItem`):
   **only adults earn passively, and a pet takes a measured 108h (~4.5 real days) to get there** —
   so a young pet had *no* income at all. Coins spawn on the ground when you come back after
@@ -414,9 +438,10 @@ bank/inventory/history too, so clobbering the *file* does lose them even though 
   for everyone (user decision); depth over breadth.
 - **Cosmetic DNA unlocks** purchasable in the shop, applied to the *next* egg rather than the
   current pet. Agreed direction; shop currently only sells equipment, not DNA/cosmetic unlocks.
-- **Costs for core actions** (feed/clean/warm/medicine): deliberately *not* added yet. Agreed to
-  wire these in together with the cosmetic shop so the economy loop lands as a whole, rather than
-  adding friction before there's anything worth saving for.
+- **Costs for core actions**: **food now costs money** (see below). Clean/warm/medicine are still
+  free — the original reasoning was "don't add friction before there's anything worth saving for",
+  and ground coins built the reward loop first, so food's friction landed on top of it rather than
+  instead of it. Apply the same test before charging for anything else.
 - **Real weather toggle**: built and verified to fail gracefully (falls back to simulated
   day/night), but the live geolocation+fetch happy path couldn't be verified in the automated
   preview environment — needs a real browser with a real user granting location permission.

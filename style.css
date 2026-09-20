@@ -2110,3 +2110,65 @@ h1 {
   0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 1px 2px rgba(0,0,0,.3)); }
   50% { transform: translateY(-3px) scale(1.06); filter: drop-shadow(0 3px 6px rgba(190,140,20,.55)); }
 }
+
+/* Food is bought, not free. The shop row is always stocked - "no food today"
+   while the pet starves would be a rage-quit - so it sits above the rotating
+   gear grid rather than inside it. */
+#food-grid {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.food-card {
+  flex: 1;
+  padding: 10px 6px 8px;
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  text-align: center;
+}
+
+.food-emoji { font-size: 26px; line-height: 1; }
+.food-name { font-size: 12px; font-weight: 800; margin-top: 3px; }
+.food-value { font-size: 11px; color: var(--ink-soft); }
+.food-owned { font-size: 10px; color: var(--ink-soft); margin-bottom: 6px; }
+
+/* The shelf shows what you own; zero is disabled rather than hidden, so the
+   shape of the menu stays learnable. */
+.food-count {
+  position: absolute;
+  top: 3px;
+  right: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+
+.food-btn { position: relative; }
+.food-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* An empty pantry dims the Feed key - tapping it takes you to the shop. */
+#feed-btn.empty {
+  filter: saturate(0.4) brightness(0.95);
+}
+
+/* Foraged food: the pet finding its own dinner when you're broke. Calmer
+   than a coin - it's relief, not treasure. */
+.ground-forage {
+  position: absolute;
+  font-size: 22px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  line-height: 1;
+  pointer-events: auto;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+  animation: coinGlint 3.4s ease-in-out infinite;
+}
+
+.ground-forage::after {
+  content: "";
+  position: absolute;
+  inset: -11px;
+}

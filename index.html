@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Pixel Pet</title>
-<link rel="stylesheet" href="style.css?v=60" />
+<link rel="stylesheet" href="style.css?v=62" />
 </head>
 <body>
   <!-- The slab: one phone-like face. The world fills it edge to edge;
@@ -41,9 +41,9 @@
 
     <!-- Feed flyout: pops above the dock's Feed key -->
     <div id="feed-menu" class="hidden">
-      <button class="pad-btn food-btn" data-food="12" title="+12 fullness"><span class="pad-emoji">🍪</span><small>Snack</small></button>
-      <button class="pad-btn food-btn" data-food="30" title="+30 fullness"><span class="pad-emoji">🍎</span><small>Meal</small></button>
-      <button class="pad-btn food-btn" data-food="55" title="+55 fullness"><span class="pad-emoji">🍲</span><small>Feast</small></button>
+      <button class="pad-btn food-btn" data-food="snack"><span class="pad-emoji">🍪</span><small>Snack</small><span class="food-count">0</span></button>
+      <button class="pad-btn food-btn" data-food="meal"><span class="pad-emoji">🍎</span><small>Meal</small><span class="food-count">0</span></button>
+      <button class="pad-btn food-btn" data-food="feast"><span class="pad-emoji">🍲</span><small>Feast</small><span class="food-count">0</span></button>
     </div>
 
     <!-- Care dock: the core loop, always visible, zero taps deep -->
@@ -110,6 +110,9 @@
         </div>
 
         <div id="room-shop" class="room hidden">
+          <div class="room-section">Pantry</div>
+          <div id="food-grid"></div>
+          <div class="room-section">Gear</div>
           <p id="shop-flavor" class="room-note"></p>
           <div id="shop-grid"></div>
           <button id="shop-refresh-btn" class="full-width">🔄 Refresh stock (15 🪙)</button>
@@ -230,10 +233,10 @@
     </div>
   </div>
 
-  <script src="creature.js?v=60"></script>
-  <script src="speech.js?v=60"></script>
-  <script src="items.js?v=60"></script>
-  <script src="scenes.js?v=60"></script>
-  <script src="main.js?v=60"></script>
+  <script src="creature.js?v=62"></script>
+  <script src="speech.js?v=62"></script>
+  <script src="items.js?v=62"></script>
+  <script src="scenes.js?v=62"></script>
+  <script src="main.js?v=62"></script>
 </body>
 </html>

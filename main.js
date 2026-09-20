@@ -25,6 +25,25 @@ const POOP_MIN_INTERVAL = 3 * HOUR;
 const POOP_MAX_INTERVAL = 5 * HOUR;
 const POOP_DIRTY_AMOUNT = 12; // cleanliness lost when a poop appears
 
+// ---- Food as a commodity ------------------------------------------------
+// Values match the old hardcoded data-food numbers exactly, so making food
+// cost money changes the ECONOMY without retuning hunger at all. Priced at
+// ~1 credit per 2 hunger points, with a small bulk discount on Feast so it's
+// a choice rather than arithmetic.
+const FOOD_TYPES = {
+  snack: { label: "Snack", emoji: "🍪", value: 12, price: 6 },
+  meal: { label: "Meal", emoji: "🍎", value: 30, price: 15 },
+  feast: { label: "Feast", emoji: "🍲", value: 55, price: 25 },
+};
+const FOOD_ORDER = ["snack", "meal", "feast"];
+
+// The safety net. Its ONLY job is to remove money as a cause of DEATH - not
+// as a cause of hunger, nagging or discomfort. One free Meal per 6h supplies
+// ~30 of the ~90 hunger points accrued in that window, so a broke player
+// stays alive and permanently nagging, never comfortable.
+const FORAGE_COOLDOWN = 6 * HOUR;
+const FORAGE_VALUE = 30;
+
 // ---- Ground coins: income for a pet too young to earn -------------------
 // Only adults earn passively, and a pet takes 108h (~4.5 real days) to get
 // there - so a young pet had NO income at all. These pay for SHOWING UP,
@@ -292,6 +311,7 @@ function defaultState() {
     needsNaming: false, // true for the moment between hatching and confirming a name
     adultForm: null,
     nextPayoutAt: null, // sim-seconds; set once the pet reaches adulthood
+    forageNextAt: 0, // sim-seconds; throttles the broke-and-starving safety net
     equipped: {}, // slot -> item; gear worn by THIS pet (slots depend on its anatomy)
     genome,
     lastTick: Date.now(), // wall-clock - used only to measure real offline gaps
@@ -304,6 +324,10 @@ let groundItems = []; // { id, kind, value, x, y } - coins waiting on the ground
 let history = []; // past pets that ran away - most recent first
 const MAX_HISTORY = 20;
 let bank = 0; // persistent across every pet - never reset by a runaway
+// Counters, not backpack items: ~33 meals to raise a pet cannot fit 20 shared
+// slots, and stacking logic in a grid built for unique rarity/affix items is
+// exactly the abstraction this project avoids. Three integers render the shelf.
+let pantry = { snack: 0, meal: 0, feast: 0 };
 let earnings = []; // recent payout log, most recent first: { amount, note, at }
 let inventory = []; // owned-but-unequipped items (the "backpack") - global, survives pets
 const BACKPACK_CAPACITY = 20;
@@ -393,7 +417,7 @@ function save() {
   localStorage.setItem(
     SAVE_KEY,
     JSON.stringify({
-      state, poops, groundItems, history, bank, earnings, inventory,
+      state, poops, groundItems, history, bank, pantry, earnings, inventory,
       shopStock, shopClock, nextShopRefreshAt, weatherEnabled,
     })
   );
@@ -466,6 +490,7 @@ function load() {
   groundItems = saved.groundItems || []; // legacy saves predate this
   history = saved.history || [];
   bank = saved.bank || 0;
+  pantry = Object.assign({ snack: 0, meal: 0, feast: 0 }, saved.pantry); // legacy saves predate this
   earnings = saved.earnings || [];
   inventory = saved.inventory || [];
   shopStock = saved.shopStock || [];
@@ -495,6 +520,66 @@ function feed(amount) {
   state.hunger = clamp(state.hunger - amount, 0, 100);
   petSpeak("fed");
   floatEmoji("❤️");
+}
+
+function buyFood(kind) {
+  const food = FOOD_TYPES[kind];
+  if (!food || bank < food.price) return false;
+  bank -= food.price;
+  pantry[kind]++;
+  return true;
+}
+
+function pantryCount() {
+  return FOOD_ORDER.reduce((n, k) => n + pantry[k], 0);
+}
+
+function cheapestFoodPrice() {
+  return Math.min(...FOOD_ORDER.map((k) => FOOD_TYPES[k].price));
+}
+
+// What a plain tap on Feed uses. NOT "cheapest" (you'd tap Snack three times
+// on a starving pet) and NOT "biggest" (you'd burn a Feast on a peckish one):
+// the largest food that won't waste much, falling back to whatever exists.
+function bestFoodFor() {
+  const room = state.hunger + 10; // a little overfill is fine, a lot is waste
+  for (let i = FOOD_ORDER.length - 1; i >= 0; i--) {
+    const k = FOOD_ORDER[i];
+    if (pantry[k] > 0 && FOOD_TYPES[k].value <= room) return k;
+  }
+  for (const k of FOOD_ORDER) if (pantry[k] > 0) return k;
+  return null;
+}
+
+function feedFromPantry(kind) {
+  if (!pantry[kind]) return false;
+  pantry[kind]--;
+  feed(FOOD_TYPES[kind].value);
+  return true;
+}
+
+// Removes MONEY as a cause of death, nothing more. Tied to the distress
+// ladder rather than a fullness percentage: at WARN_HUNGER the clock that
+// leads to sick/runaway has just started, and one free Meal drops hunger
+// clear of the warn tier so anyWarning() resets it. Poverty alone can
+// therefore never run a pet off - but a pet that's ALSO dirty or cold keeps
+// its clock ticking, so this doesn't make anything immortal.
+function maybeForage() {
+  if (state.stage === "egg" || state.ranAway || isAsleep()) return;
+  if (state.hunger < WARN_HUNGER) return;
+  if (pantryCount() > 0) return;
+  if (bank >= cheapestFoodPrice()) return; // not broke, just unprepared
+  if (state.simClock < (state.forageNextAt || 0)) return;
+  if (groundItems.some((g) => g.kind === "forage")) return;
+  state.forageNextAt = state.simClock + FORAGE_COOLDOWN;
+  const spot = freeGroundSpot();
+  groundItems.push({
+    id: Math.random().toString(36).slice(2),
+    kind: "forage",
+    value: FORAGE_VALUE,
+    x: spot.x,
+    y: spot.y,
+  });
 }
 
 function clean() {
@@ -589,10 +674,15 @@ function collectGroundItem(id) {
   const it = groundItems.find((g) => g.id === id);
   if (!it) return;
   groundItems = groundItems.filter((g) => g.id !== id);
-  bank += it.value;
-  logEarning(it.value, `${state.name} found it.`);
-  showFloatingCredit(it.value);
-  chimeDing();
+  if (it.kind === "forage") {
+    // Foraged food reads as the pet finding its own dinner, not a handout.
+    feed(it.value);
+  } else {
+    bank += it.value;
+    logEarning(it.value, `${state.name} found it.`);
+    showFloatingCredit(it.value);
+    chimeDing();
+  }
   checkGroundClear();
 }
 
@@ -1016,6 +1106,7 @@ function tick(dt) {
 
   checkCareMistakes();
   checkSickness(dt);
+  maybeForage();
 
   if (state.stage === "adult" && state.simClock >= state.nextPayoutAt) {
     awardPayout();
@@ -1734,7 +1825,39 @@ function cancelDrag() {
 
 // ---- Shop ---------------------------------------------------------------
 
+// Always stocked, deliberately outside the rotating gear stock: "the shop has
+// no food today" while your pet starves would be a rage-quit.
+function renderFoodShop() {
+  const grid = document.getElementById("food-grid");
+  if (!grid) return;
+  grid.innerHTML = "";
+  for (const k of FOOD_ORDER) {
+    const f = FOOD_TYPES[k];
+    const card = document.createElement("div");
+    card.className = "food-card";
+    const affordable = bank >= f.price;
+    card.innerHTML =
+      `<div class="food-emoji">${f.emoji}</div>` +
+      `<div class="food-name">${f.label}</div>` +
+      `<div class="food-value">+${f.value}</div>` +
+      `<div class="food-owned">have ${pantry[k]}</div>`;
+    const btn = document.createElement("button");
+    btn.className = "shop-buy-btn"; // same affordance as the gear cards below
+    btn.textContent = `🪙 ${f.price}`;
+    btn.disabled = !affordable;
+    btn.addEventListener("click", () => {
+      if (buyFood(k)) {
+        showMessage(`Bought a ${f.label}.`);
+        render();
+      }
+    });
+    card.appendChild(btn);
+    grid.appendChild(card);
+  }
+}
+
 function renderShop() {
+  renderFoodShop();
   const supported = state.stage !== "egg" && !state.ranAway ? slotsForGenome(state.genome) : [];
   shopFlavorEl.textContent =
     supported.length > 0
@@ -2449,11 +2572,12 @@ function renderPoops() {
   // tidy-up rather than two systems.
   for (const it of groundItems) {
     const btn = document.createElement("button");
-    btn.className = "ground-coin";
-    btn.textContent = "🪙";
+    const forage = it.kind === "forage";
+    btn.className = forage ? "ground-forage" : "ground-coin";
+    btn.textContent = forage ? "🍎" : "🪙";
     btn.style.left = it.x + "%";
     btn.style.top = bandTop + (it.y / 100) * bandHeight + "%";
-    btn.title = `Pick up ${it.value} credits`;
+    btn.title = forage ? "A snack to forage" : `Pick up ${it.value} credits`;
     btn.addEventListener("click", () => {
       collectGroundItem(it.id);
       render();
@@ -2469,6 +2593,7 @@ function render() {
   renderStageBadge();
   renderStats();
   renderStatusOrbs();
+  renderPantry();
   renderPoops();
   renderRooms();
   renderCompanionScreen();
@@ -2510,7 +2635,15 @@ feedBtnEl.addEventListener("pointerup", () => {
   if (!feedHold) return; // the hold already opened the flyout
   clearTimeout(feedHold);
   feedHold = null;
-  feed(30); // Meal
+  const kind = bestFoodFor();
+  if (!kind) {
+    // Nothing to feed. Teach the rule rather than failing silently.
+    showMessage("The pantry is empty.");
+    setRoom("shop");
+    render();
+    return;
+  }
+  feedFromPantry(kind);
   triggerSquish();
   render();
 });
@@ -2543,11 +2676,24 @@ cleanPillEl.addEventListener("click", () => {
 
 for (const btn of document.querySelectorAll(".food-btn")) {
   btn.addEventListener("click", () => {
-    feed(Number(btn.dataset.food));
+    if (!feedFromPantry(btn.dataset.food)) return;
     triggerSquish();
     feedMenuEl.classList.add("hidden");
     render();
   });
+}
+
+// The shelf shows what you actually own; an empty Feed key teaches the new
+// rule by sending you to the shop instead of failing silently.
+function renderPantry() {
+  for (const btn of document.querySelectorAll(".food-btn")) {
+    const k = btn.dataset.food;
+    const n = pantry[k] || 0;
+    btn.disabled = n === 0;
+    const badge = btn.querySelector(".food-count");
+    if (badge) badge.textContent = n;
+  }
+  feedBtnEl.classList.toggle("empty", pantryCount() === 0);
 }
 document.getElementById("clean-btn").addEventListener("click", () => {
   clean();
