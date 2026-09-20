@@ -276,6 +276,16 @@ Script load order is now: `creature.js` → `speech.js` → `items.js` → `scen
   chore and reward read as one tidy-up, and `checkGroundClear()` fires a `tidy` speech beat + ✨
   when the *last* item of either kind goes. It's only ever called from a site that just removed
   something, so an already-tidy world never triggers it.
+  **`#poop-layer` MUST stay `z-index: 2`** — above `#pet-canvas` (z-index 1). Hit testing follows
+  paint order, and the pet covers ~65% of the screen width at `CLOSEUP_PET_SCALE` 2.2, so beneath
+  it **5 of 6 ground items were literally untappable**. Drawing them in front reads correctly:
+  they sit in the ground band at the pet's feet, i.e. nearer the viewer. The layer itself is
+  `pointer-events: none` so only the items catch taps, and each item has a `::after { inset: -11px }`
+  giving it a ~44px target without touching `transform` (which `.ground-coin` animates).
+  Placement goes through **`freeGroundSpot()`**, which samples 20 candidates and keeps the one
+  furthest from everything already on the ground, measured in real pixels in both axes. Without it
+  coins and poops landed on each other ~28% of the time and the one underneath couldn't be tapped.
+  Measured after: **0 blocked out of 96** across 12 simulated returns.
   **GOTCHAS:** (1) `GROUND_COIN_MIN_GAP` is the only thing stopping a player farming coins by
   reloading — `catchUpAfterGap` runs on every page load. (2) It's called with **real** elapsed
   seconds, never scaled by `timeScale`, so **the dev time slider will never produce return coins**;

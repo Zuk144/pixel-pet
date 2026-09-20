@@ -533,6 +533,34 @@ function cleanOnePoop(id) {
   checkGroundClear();
 }
 
+// Ground items are tap targets ~44px across, so two landing on the same spot
+// means the one underneath can't be reached until the top one is gone. Sample
+// a handful of candidate spots and keep the one furthest from everything
+// already down - best-effort, bounded, and it degrades gracefully to "the
+// roomiest of 20 tries" when the ground really is crowded.
+function freeGroundSpot() {
+  const w = screenEl.clientWidth || 428;
+  const bandPx = 0.12 * (screenEl.clientHeight || 926); // matches bandHeight in renderPoops
+  const taken = poops.concat(groundItems);
+  let best = { x: 12 + Math.random() * 76, y: Math.random() * 100 };
+  let bestDist = -1;
+  for (let i = 0; i < 20; i++) {
+    const spot = { x: 12 + Math.random() * 76, y: Math.random() * 100 };
+    let nearest = Infinity;
+    for (const t of taken) {
+      const dx = ((spot.x - t.x) / 100) * w;
+      const dy = ((spot.y - t.y) / 100) * bandPx;
+      nearest = Math.min(nearest, Math.hypot(dx, dy));
+    }
+    if (nearest > bestDist) {
+      bestDist = nearest;
+      best = spot;
+    }
+    if (nearest >= 46) break; // clear of every neighbour's tap target
+  }
+  return best;
+}
+
 // Coming back after a while seeds the world with things to tap: the missed
 // poops are the chore (already spawned by catchUpAfterGap), these are the
 // payoff. One return, some tidying, a little treasure.
@@ -540,15 +568,19 @@ function spawnReturnCoins(elapsedSeconds) {
   if (state.stage === "egg" || state.ranAway) return;
   if (elapsedSeconds < GROUND_COIN_MIN_GAP) return; // a quick reload isn't a return
   const n = clamp(Math.floor(elapsedSeconds / HOUR), 1, GROUND_COIN_MAX);
+  // Spread them across the width in slots rather than placing each at random:
+  // two coins landing on the same spot means the one underneath can't be
+  // tapped at all.
   for (let i = 0; i < n; i++) {
+    const spot = freeGroundSpot();
     groundItems.push({
       id: Math.random().toString(36).slice(2),
       kind: "coin",
       value:
         GROUND_COIN_MIN_VALUE +
         Math.round(Math.random() * (GROUND_COIN_MAX_VALUE - GROUND_COIN_MIN_VALUE)),
-      x: 12 + Math.random() * 76, // same convention as spawnPoop
-      y: 55 + Math.random() * 35,
+      x: spot.x,
+      y: spot.y,
     });
   }
 }
@@ -592,10 +624,11 @@ function newEgg() {
 
 function spawnPoop() {
   if (poops.length >= MAX_POOP) return;
+  const spot = freeGroundSpot();
   poops.push({
     id: Math.random().toString(36).slice(2),
-    x: 15 + Math.random() * 70, // percent across the screen
-    y: 55 + Math.random() * 35, // keep them below the pet
+    x: spot.x, // percent across the screen
+    y: spot.y, // position within the ground band
   });
   state.cleanliness = clamp(state.cleanliness - POOP_DIRTY_AMOUNT, 0, 100);
 }
@@ -2392,14 +2425,19 @@ function renderPet() {
 
 function renderPoops() {
   poopLayerEl.innerHTML = "";
-  // poop.y (0-100) maps onto the ground band, not the whole tall screen
+  // item.y (0-100) maps onto the ground band, not the whole tall screen. The
+  // band spans from just above the ground line to just short of the dock -
+  // it used to be ~26px tall, which crammed everything into one strip and had
+  // coins and poops constantly landing on each other.
   const groundPct = (SCENE_GROUND_Y / Math.max(1, screenEl.clientHeight)) * 100;
+  const bandTop = groundPct - 7;
+  const bandHeight = 12;
   for (const poop of poops) {
     const btn = document.createElement("button");
     btn.className = "poop";
     btn.textContent = "💩";
     btn.style.left = poop.x + "%";
-    btn.style.top = groundPct - 9 + (poop.y / 100) * 8 + "%";
+    btn.style.top = bandTop + (poop.y / 100) * bandHeight + "%";
     btn.title = "Clean this up";
     btn.addEventListener("click", () => {
       cleanOnePoop(poop.id);
@@ -2414,7 +2452,7 @@ function renderPoops() {
     btn.className = "ground-coin";
     btn.textContent = "🪙";
     btn.style.left = it.x + "%";
-    btn.style.top = groundPct - 9 + (it.y / 100) * 8 + "%";
+    btn.style.top = bandTop + (it.y / 100) * bandHeight + "%";
     btn.title = `Pick up ${it.value} credits`;
     btn.addEventListener("click", () => {
       collectGroundItem(it.id);

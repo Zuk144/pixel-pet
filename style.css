@@ -204,9 +204,30 @@ h1 {
   100% { opacity: 0; transform: translateY(-60px); }
 }
 
+/* MUST sit above the pet (#pet-canvas is z-index 1). Ground items are tap
+   targets, and the pet covers ~65% of the screen width at CLOSEUP_PET_SCALE
+   2.2 - below it, most coins and poops were simply unclickable, since hit
+   testing follows paint order. Drawing them in front reads correctly anyway:
+   they sit in the ground band at the pet's feet, i.e. nearer the viewer. */
 #poop-layer {
   position: absolute;
   inset: 0;
+  z-index: 2;
+  pointer-events: none; /* only the items themselves catch taps */
+}
+
+/* Phone-sized tap targets without touching transform - .ground-coin animates
+   its transform, and overriding that is the documented way to break it. */
+.poop,
+.ground-coin {
+  pointer-events: auto;
+}
+
+.poop::after,
+.ground-coin::after {
+  content: "";
+  position: absolute;
+  inset: -11px; /* ~44px tap target around a 22px glyph */
 }
 
 .poop {
