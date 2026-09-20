@@ -28,9 +28,18 @@ bars, no labeled form sections, no data-dense buttons.
 
 - **Palette/typography**: candy gradient page, warm brown ink, rounded font stack (`ui-rounded` /
   SF Pro Rounded). All color tokens are CSS variables in `:root`.
-- **The slab** (`#app`): a phone-shaped face (~420px, 78vh) with the scene canvas edge-to-edge
-  behind everything; faint scanlines kept via `#screen::after` for the retro soul. The ground line
-  `SCENE_GROUND_Y` is dynamic (`sizeSceneCanvas`: canvas height − 118, clearing the dock), and the
+- **The slab** (`#app`): a phone-shaped face (~420px, 78dvh) with the scene canvas edge-to-edge
+  behind everything; faint scanlines kept via `#screen::after` for the retro soul.
+  **At ≤540px wide the card framing drops entirely** (media query at the end of style.css):
+  `#app` goes `100%` × `100dvh`, radius 0, no shadow, and the top bar / dock / name overlay pick
+  up `env(safe-area-inset-*)` so they clear the Dynamic Island and home indicator. The reason:
+  a framed card on a candy gradient reads as a toy on a table on desktop, but on a real phone it
+  reads as a phone inside a phone, with dead gradient bands top and bottom. Units are `dvh`, not
+  `vh` — iOS `vh` counts the area behind Safari's toolbars. The ground line
+  `SCENE_GROUND_Y` is dynamic (`sizeSceneCanvas`) and **measured from the dock's actual top
+  minus 33px**, not a hardcoded `height − 118`: full-bleed on a notched phone the safe-area inset
+  lifts the dock ~34px, and the old constant put the ground *below* the dock's top edge, leaving
+  the pet standing inside it. The fallback constant is still there for the pre-layout call. The
   pet's feet ride it in BOTH modes — closeup is just bigger (`CLOSEUP_PET_SCALE` 1.45 vs
   `SCENE_PET_SCALE` 0.55). `measureSpritePad()` scans the canvas pixels so feet (not the canvas
   edge) sit on the ground. GOTCHA: never animate `transform` on `#pet-canvas` via CSS (it clobbers
@@ -48,7 +57,9 @@ bars, no labeled form sections, no data-dense buttons.
   `activeRoom === "home"` = sheet closed. The ••• key reopens to `lastSheetRoom`.
 - **Contextual controls**: UI reacts to the world — a red **vet pill** (`#vet-pill`) fades in over
   the scene only while the pet is sick; the More key carries the red vet badge dot.
-- **Dev tray** (`#dev-tray`): alerts button + Test Tools live BELOW the slab, not on the toy.
+- **Dev tray** (`#dev-tray`): Test Tools live BELOW the slab, not on the toy. Hidden entirely at
+  phone widths (there is no "below the slab" when the slab is the whole screen); a
+  `#dev-tray:has(#test-tools:not(.hidden))` rule pulls it back when dev mode is on.
 - Hunger is *displayed* as "Fullness" (100 − hunger) everywhere player-facing (orb + popover bar).
 
 ## Critical architecture facts
@@ -149,6 +160,11 @@ Script load order is now: `creature.js` → `speech.js` → `items.js` → `scen
   **~23% of pets born already uncomfortable**).
 - **Push alerts**: Web Audio tones (no audio files) + tab-title flash + browser Notification when
   the tab isn't focused, so the pet can "call out" instead of relying on you remembering to check.
+  **The "Enable Alerts" button was removed** (user decision) — it was dead weight on the phone:
+  mobile Safari has no `Notification` API at all, so `updateAlertsBtn()` just hid it, and even in
+  an installed PWA a notification while the app is *closed* needs real Web Push and a server.
+  The `notify()` machinery is still there and harmlessly no-ops (it returns early unless
+  permission is `granted`), so restoring this later is a button and a listener, not a rewrite.
 - **Procedural creature DNA**: 4 species (Blob, Lizard, Fluff, Squid), each with body-shape
   tendencies, appendages, markings, eye styles, a movement "personality," a payout "personality,"
   base stats, and a temperature comfort window.
@@ -226,7 +242,7 @@ Script load order is now: `creature.js` → `speech.js` → `items.js` → `scen
 - **Test Tools panel** (dev-only): time-speed slider, skip-stage, give-random-item, +100 credits,
   and the scene-jump row. **Gated behind dev mode**, not visible to normal players — open with
   `?dev=1` in the URL, or tap the stage badge 5× within 2.5s (`setupDevMode()`/`setDevMode()` in
-  main.js). `#alerts-btn` (push notifications) stays outside this gate; it's a real player feature.
+  main.js). The dev tray now holds *only* Test Tools, so nothing player-facing sits below the slab.
 - **Naming the pet**: `randomName()` still picks a cute suggestion at birth (so an unnamed pet
   never feels anonymous pre-hatch), but the moment it hatches (`advanceStage` → `next === "baby"`)
   sets `state.needsNaming = true` and a warm full-screen overlay (`#name-overlay`) lets the player

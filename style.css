@@ -38,7 +38,7 @@
 
 body {
   margin: 0;
-  min-height: 100vh;
+  min-height: 100dvh; /* dvh, not vh: iOS vh counts the area behind Safari's toolbars */
   padding: 18px 12px;
   display: flex;
   flex-direction: column;
@@ -56,7 +56,7 @@ body {
 #app {
   position: relative;
   width: min(420px, 100%);
-  height: min(78vh, 760px);
+  height: min(78dvh, 760px);
   min-height: 480px;
   border-radius: 42px;
   /* MUST be clip, not hidden: the closed sheet's translateY(105%) parks it
@@ -784,25 +784,6 @@ h1 {
 #dev-tray {
   width: min(420px, 100%);
   text-align: center;
-}
-
-#alerts-btn {
-  background: none;
-  border: 1px solid #9fb0a8;
-  color: #8a7660;
-  font-size: 12px;
-  padding: 6px 10px;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-#alerts-btn:hover {
-  background: #f5e2ba;
-}
-
-#alerts-btn.enabled {
-  border-color: #4caf7d;
-  color: #2f7c53;
 }
 
 #test-tools {
@@ -1846,4 +1827,57 @@ h1 {
   font-weight: 700;
   color: var(--lcd-amber, #ffb552);
   margin-top: 4px;
+}
+
+/* ============================================================
+   PHONE — the device IS the slab.
+
+   The framed card floating on a candy gradient is a desktop conceit: there
+   it reads as a toy sitting on a table. On a real phone it reads as a phone
+   inside a phone, with dead bands of gradient above and below. At phone
+   widths the world goes edge to edge and touches the bezel instead.
+   ============================================================ */
+@media (max-width: 540px) {
+  body {
+    padding: 0;
+    gap: 0;
+  }
+
+  #app {
+    width: 100%;
+    height: 100dvh;
+    max-height: none;
+    min-height: 0;
+    border-radius: 0;
+    /* the inset rings and drop shadow are the moulded plastic of a toy.
+       there is no toy any more - the phone is the toy */
+    box-shadow: none;
+  }
+
+  /* The Dynamic Island and the home indicator now sit over the world, so
+     the floating furniture steps around them. The 0px fallbacks keep
+     desktop and non-notched phones exactly where they were. */
+  #top-bar {
+    top: calc(14px + env(safe-area-inset-top, 0px));
+  }
+
+  #dock {
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+
+  #name-overlay {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* The tray below the slab has nowhere left to live. It holds only Test
+     Tools now, so it stays out of the way until dev mode switches them on. */
+  #dev-tray {
+    display: none;
+  }
+
+  #dev-tray:has(#test-tools:not(.hidden)) {
+    display: block;
+    padding: 10px 0 calc(10px + env(safe-area-inset-bottom, 0px));
+  }
 }

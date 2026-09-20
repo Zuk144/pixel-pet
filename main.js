@@ -1074,7 +1074,6 @@ const medicineBtnEl = document.getElementById("medicine-btn");
 const runawayOverlayEl = document.getElementById("runaway-overlay");
 const nameOverlayEl = document.getElementById("name-overlay");
 const nameInputEl = document.getElementById("name-input");
-const alertsBtnEl = document.getElementById("alerts-btn");
 const vetBadgeEl = document.getElementById("vet-badge");
 const vetHealthyEl = document.getElementById("vet-healthy");
 const petNameEl = document.getElementById("pet-name");
@@ -1858,9 +1857,14 @@ function nearestShell() {
 function sizeSceneCanvas() {
   sceneCanvasEl.width = screenEl.clientWidth;
   sceneCanvasEl.height = screenEl.clientHeight;
-  // the slab is as tall as the device, so the ground line rides its bottom
-  // (clearing the floating dock)
-  SCENE_GROUND_Y = sceneCanvasEl.height - 118;
+  // The ground rides just above the floating dock. Measuring the dock beats a
+  // hardcoded offset: full-bleed on a notched phone, safe-area-inset-bottom
+  // lifts the dock ~34px, and a fixed number left the pet standing on top of it.
+  const dockEl = document.getElementById("dock");
+  const dockTop = dockEl ? dockEl.getBoundingClientRect().top : 0;
+  SCENE_GROUND_Y = dockTop
+    ? Math.round(dockTop - screenEl.getBoundingClientRect().top) - 33
+    : sceneCanvasEl.height - 118; // pre-layout fallback, the old constant
 }
 window.addEventListener("resize", sizeSceneCanvas);
 
@@ -2308,20 +2312,6 @@ function renderPoops() {
   }
 }
 
-function updateAlertsBtn() {
-  if (typeof Notification === "undefined") {
-    alertsBtnEl.classList.add("hidden");
-    return;
-  }
-  if (Notification.permission === "granted") {
-    alertsBtnEl.textContent = "🔔 Alerts on";
-    alertsBtnEl.classList.add("enabled");
-  } else {
-    alertsBtnEl.textContent = "🔔 Enable Alerts";
-    alertsBtnEl.classList.remove("enabled");
-  }
-}
-
 // Everything except the creature itself - safe to call from the
 // once-a-second simulation tick without fighting the animation loop below.
 function render() {
@@ -2432,10 +2422,6 @@ messageEl.addEventListener("click", (e) => {
     messageEl.textContent = "";
     lastVoice = null;
   }, 5000);
-});
-alertsBtnEl.addEventListener("click", () => {
-  if (typeof Notification === "undefined") return;
-  Notification.requestPermission().then(updateAlertsBtn);
 });
 
 // ---- Test tools (beta) ------------------------------------------------
@@ -2617,7 +2603,6 @@ try {
 if (shopStock.length !== SHOP_SLOT_COUNT) refreshShop(); // covers a brand-new save
 if (state.stage === "egg" || state.ranAway) activeRoom = "hall";
 renderHall();
-updateAlertsBtn();
 updateWeatherToggleBtn();
 setupDevMode();
 setupTestTools();
