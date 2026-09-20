@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Pixel Pet</title>
-<link rel="stylesheet" href="style.css?v=53" />
+<link rel="stylesheet" href="style.css?v=54" />
 </head>
 <body>
   <!-- The slab: one phone-like face. The world fills it edge to edge;
@@ -62,6 +62,7 @@
       </div>
 
       <div id="room-nav">
+        <button class="room-tab" data-room="care">🌡️<small>Care</small></button>
         <button class="room-tab" data-room="gear">🎒<small>Gear</small></button>
         <button class="room-tab" data-room="shop">🛒<small>Shop</small></button>
         <button class="room-tab" data-room="vet">🏥<small>Vet</small></button>
@@ -70,6 +71,18 @@
       </div>
 
       <div id="companion-body">
+        <!-- Care: where the displaced actions live "on purpose". The rule is
+             pills are for NOW, the sheet is for ON PURPOSE - which is why
+             these left the orb popovers rather than being duplicated there. -->
+        <div id="room-care" class="room hidden">
+          <div id="temp-actions">
+            <button id="warm-btn" class="pop-action warm">🔥 Warm</button>
+            <button id="cool-btn" class="pop-action cool">❄️ Cool</button>
+          </div>
+          <button id="clean-btn" class="pop-action clean">🧹 Tidy up</button>
+          <p class="room-note">The world will ask when it needs these. This is where they live the rest of the time.</p>
+        </div>
+
         <div id="room-gear" class="room hidden">
           <div id="sheet-head">
             <span id="sheet-title"></span>
@@ -150,8 +163,7 @@
       <div class="pop-section hidden" data-pop="clean">
         <div class="pop-title">🫧 Cleanliness</div>
         <div class="bar"><div id="clean-fill" class="fill clean"></div></div>
-        <button id="clean-btn" class="pop-action clean">🧹 Tidy up</button>
-        <p class="pop-note">Tap poops on the screen as they appear, or tidy everything at once.</p>
+        <p class="pop-note">Tap poops on the screen as they appear. A full tidy-up lives in ••• → Care.</p>
       </div>
       <div class="pop-section hidden" data-pop="temp">
         <div class="pop-title">🌡️ Comfort</div>
@@ -173,10 +185,6 @@
             <div id="thermo-status"></div>
             <div id="thermo-outside"></div>
           </div>
-        </div>
-        <div id="temp-actions">
-          <button id="warm-btn" class="pop-action warm">🔥 Warm</button>
-          <button id="cool-btn" class="pop-action cool">❄️ Cool</button>
         </div>
         <button id="weather-toggle-btn">📍 Use my real local weather</button>
       </div>
@@ -213,10 +221,10 @@
     </div>
   </div>
 
-  <script src="creature.js?v=53"></script>
-  <script src="speech.js?v=53"></script>
-  <script src="items.js?v=53"></script>
-  <script src="scenes.js?v=53"></script>
-  <script src="main.js?v=53"></script>
+  <script src="creature.js?v=54"></script>
+  <script src="speech.js?v=54"></script>
+  <script src="items.js?v=54"></script>
+  <script src="scenes.js?v=54"></script>
+  <script src="main.js?v=54"></script>
 </body>
 </html>

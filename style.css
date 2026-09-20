@@ -1546,35 +1546,87 @@ h1 {
    CARE DOCK — the core loop, always visible, floating on frosted glass.
    Feed pops a mini flyout; ••• slides up the sheet with everything else.
    ============================================================ */
+/* DO NOT DELETE THIS ELEMENT. It looks like an empty transparent div and it
+   is not: sizeSceneCanvas() derives SCENE_GROUND_Y from #dock's live bounding
+   rect top, so this box IS the ground the pet stands on. It must stay exactly
+   71px tall and 14px (+ inset) off the bottom - ground = screenH - insetB -
+   175, where 175 = 14 (offset) + 71 (height) + 90 (GROUND_DOCK_GAP).
+   The frosted rail it used to paint was a container for a ROW of keys. With
+   two corner buttons there is no row to contain, so only the looks were
+   stripped; the box stays because the box is load-bearing.
+   pointer-events:none matters - this 404x71 box now spans invisible world
+   between the circles, and taps there must reach the scene, not a dead band. */
 #dock {
   position: absolute;
   bottom: 14px;
   left: 12px;
   right: 12px;
+  height: 71px;
   z-index: 20;
   display: flex;
-  gap: 7px;
-  padding: 9px;
-  border-radius: 28px;
-  background: rgba(255, 248, 236, 0.6);
-  backdrop-filter: blur(14px) saturate(1.4);
-  -webkit-backdrop-filter: blur(14px) saturate(1.4);
-  box-shadow: 0 8px 26px rgba(70, 50, 25, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  justify-content: space-between;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  background: none;
+  pointer-events: none;
 }
 
+/* Two circles in the corners, same diameter, same underside depth. The rail
+   used to do the grouping; symmetry does it now, so don't let one drift. */
 .dock-btn {
   position: relative;
-  flex: 1;
+  pointer-events: auto;
+  flex: 0 0 71px;
+  width: 71px;
+  height: 71px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 2px;
-  padding: 9px 0 7px;
+  padding: 0;
   border: none;
-  border-radius: 19px;
+  border-radius: 50%;
   cursor: pointer;
   color: #fff;
   transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+/* No rail behind them any more, so each circle carries its own lift - without
+   this the butter one vanishes against a sand or sunset scene. */
+.dock-btn.feed {
+  box-shadow: 0 4px 0 var(--butter-dk), 0 6px 18px rgba(70, 50, 25, 0.28);
+}
+
+.dock-btn.more {
+  box-shadow: 0 4px 0 #2a2119, 0 6px 18px rgba(70, 50, 25, 0.28);
+}
+
+.dock-btn small {
+  display: none; /* a circle has no room for a label */
+}
+
+.dock-btn .dock-emoji {
+  font-size: 30px;
+}
+
+/* Feed's label carried the hint that there's more inside; on a circle it's
+   gone, so borrow the More key's own language - dots mean "more here". */
+#feed-btn::after {
+  content: "•••";
+  position: absolute;
+  bottom: 9px;
+  font-size: 9px;
+  line-height: 1;
+  opacity: 0.45;
+}
+
+/* The vet dot was positioned against a rounded rect; on a circle the box's
+   top-right corner sits ~10px outside the painted shape. */
+#more-btn .badge {
+  top: 7px;
+  right: 7px;
 }
 
 .dock-emoji { font-size: 22px; line-height: 1; }
@@ -1965,13 +2017,7 @@ h1 {
    keys used to waste. DO NOT change the dock's height or bottom offset -
    sizeSceneCanvas() derives SCENE_GROUND_Y from the dock's top via
    GROUND_DOCK_GAP, so resizing it moves the ground the pet stands on. */
-#dock .dock-btn.feed {
-  flex: 1;
-}
 
-#dock .dock-btn.more {
-  flex: 0 0 82px;
-}
 
 /* Warm / Cool / Clean keep a permanent home in the orb popover they belong
    to, so nothing became unreachable - important for Clean especially, since
@@ -2009,23 +2055,7 @@ h1 {
   flex: 1;
 }
 
-/* The wide Feed key lays its icon and label side by side and scales them up.
-   Stacked-and-centred is right for a 70px key; on a 297px one it reads as a
-   small button someone stretched, rather than the primary action. */
-#dock .dock-btn.feed {
-  flex-direction: row;
-  justify-content: center;
-  gap: 10px;
-}
 
-#dock .dock-btn.feed .dock-emoji {
-  font-size: 26px;
-}
-
-#dock .dock-btn.feed small {
-  font-size: 15px;
-  letter-spacing: 0.04em;
-}
 
 /* Any contextual pill occupies the speech chip's line, so the chip drops
    below it. Same fix the sleep pill already had; the vet pill silently

@@ -1259,6 +1259,11 @@ function renderCompanionScreen() {
   const alive = state.stage !== "egg";
   let txt = "";
   switch (activeRoom) {
+    case "care":
+      txt = alive
+        ? `${Math.round(state.temp)}°  ·  ${tempDiscomfortAmount() > 0 ? "UNCOMFORTABLE" : "COMFY"}`
+        : "NO PET";
+      break;
     case "gear":
       txt = alive
         ? `${state.name}  ♥${maxHP()}  BAG ${inventory.length}/${BACKPACK_CAPACITY}`

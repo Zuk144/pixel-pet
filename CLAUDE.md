@@ -53,7 +53,15 @@ bars, no labeled form sections, no data-dense buttons.
 - **Top bar**: one frosted pill (`#top-bar`) — pet name + stage chip, the three **status orbs**
   (conic ring = level, color = urgency, pulses when out of range), credits. Tapping an orb opens
   the **stat popover** (thermostat dial + weather toggle live in the temp popover).
-- **Care dock** (`#dock`): **two keys — a wide butter `Feed` and a dark `••• More`.** Feed is
+- **Care dock** (`#dock`): **two 71px circles in the bottom corners — butter `Feed` bottom-left,
+  dark `••• More` bottom-right.** The frosted rail is gone: a rail is a container for a *row* of
+  keys, and with two corner buttons there is no row to contain. `#dock` itself survives as a
+  **transparent, `pointer-events: none` positioning wrapper** — see the gotcha section, it is
+  load-bearing for the ground line. `pointer-events: auto` goes back on the buttons so the
+  invisible span between them passes taps through to the world. Symmetry does the grouping the
+  rail used to do, so both circles keep the same diameter, underside depth and 12px edge inset.
+  A circle has no room for a label, so `#feed-btn::after` paints a faint `•••` pip to carry the
+  "there's more in here" hint — borrowing the More key's own language. Feed is
   tap-to-Meal (+30) and **hold 450ms** for the `#feed-menu` flyout (Snack/Meal/Feast); More slides
   up the sheet. The core loop is never hidden behind navigation — that's the law, and Feed being
   one tap is that law honoured properly rather than diluted five ways.
@@ -61,12 +69,18 @@ bars, no labeled form sections, no data-dense buttons.
   simulation they were a lie about importance: hunger warns first ~90% of the time, cleanliness is
   a ~13h chore, and temperature was measured at **0.0% occurrence** before weather events existed.
   Three of five keys sat idle almost always, diluting the one key that is the actual loop. They
-  are **contextual pills** now (below) plus a permanent home in the orb popover each belongs to
-  (`.pop-action` buttons — `#warm-btn`/`#cool-btn` in the temp popover, `#clean-btn` in the clean
-  one). **Those ids are deliberately unchanged** so the original listeners still work untouched.
+  are **contextual pills** now (below) plus a permanent home in the sheet's **Care tab**
+  (`#room-care`: `#warm-btn`/`#cool-btn`/`#clean-btn` as `.pop-action`s). **Those ids are
+  deliberately unchanged** so the original listeners still work untouched.
   Keeping `#clean-btn` reachable is not optional: `CLEAN_PASSIVE_RATE` grime (100/20h) is **not**
   recoverable by tapping poops (+12 each), so with no full `clean()` anywhere, cleanliness can
   only ever fall and the pet drifts into permanent distress.
+  The governing rule, which is what stops this sprawling again:
+  **pills are for "now", the sheet is for "on purpose".** That's why the actions *moved* into Care
+  rather than also being duplicated in the orb popovers — the popovers keep their readouts (bars,
+  thermostat dial, weather toggle) and go back to being pure status. Temperature lives in exactly
+  two places (the pill and Care), never three. The tab row is `flex: 1` so six tabs auto-fit at
+  ~62px on a 404px sheet; **six is the ceiling, don't add a seventh.**
 - **The sheet** (`#companion`, reused id so main.js room logic is untouched): an iOS-style bottom
   sheet (translateY slide, rounded top, frosted cream) holding the amber LCD readout
   (`#companion-screen`), a Gear/Shop/Vet/Bank/Hall tab row, and the scrollable room panels.
@@ -277,10 +291,21 @@ Script load order is now: `creature.js` → `speech.js` → `items.js` → `scen
   keep the suggestion, reroll (🎲 → another `randomName()`), or type their own (16-char cap). Only
   primes the input once per naming moment (`nameOverlayShown` flag) so it doesn't clobber typing.
 
-## Gotcha: two things that must not be "tidied up" later
+## Gotcha: three things that must not be "tidied up" later
 
-Both were found during the iPhone 13 Pro Max pre-ship review, and both look like
-harmless style when you meet them in the file:
+All look like harmless style — or in one case like a leftover empty div — when
+you meet them in the file:
+
+- **`#dock` is a transparent empty-looking wrapper and it is load-bearing.** It
+  paints nothing, has `pointer-events: none`, and contains only two circles. It
+  looks deletable. It is not: `sizeSceneCanvas()` derives `SCENE_GROUND_Y` from
+  `#dock`'s live bounding-rect top, so **this box is the ground the pet stands
+  on**. The invariant is `ground = screenH − insetB − 175`, where
+  `175 = 14 (bottom offset) + 71 (height) + 90 (GROUND_DOCK_GAP)` — verified at
+  751 on a 926px screen. Keep it 71px tall at `bottom: 14px + inset`. If the
+  circle diameter `H` ever changes, `GROUND_DOCK_GAP` becomes `161 − H` **and**
+  the pre-layout fallback's `85` becomes `14 + H`, in the same commit, or
+  desktop's first paint disagrees with its second.
 
 - **`#app` is `overflow: clip`, NOT `overflow: hidden`.** The closed sheet's
   `translateY(105%)` parks it ~131px below the slab, which gives `#app` 132px of
