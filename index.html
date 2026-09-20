@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Pixel Pet</title>
-<link rel="stylesheet" href="style.css?v=54" />
+<link rel="stylesheet" href="style.css?v=55" />
 </head>
 <body>
   <!-- The slab: one phone-like face. The world fills it edge to edge;
@@ -18,19 +18,17 @@
       <div id="pet-message"></div>
     </div>
 
-    <!-- Top bar: name + stage, status orbs, credits — all the hub info in one line -->
-    <div id="top-bar">
-      <div id="top-info">
-        <div id="pet-name" class="hidden"></div>
-        <div id="stage-badge">Egg</div>
-      </div>
-      <div id="status-strip">
-        <button class="status-orb" data-stat="food" title="Fullness"><span class="orb-icon">🍖</span></button>
-        <button class="status-orb" data-stat="clean" title="Cleanliness"><span class="orb-icon">🫧</span></button>
-        <button class="status-orb" data-stat="temp" title="Comfort"><span class="orb-icon">🌡️</span></button>
-      </div>
-      <button id="bank-badge" data-room="bank">🪙 <span id="bank-amount">0</span></button>
+    <!-- Identity, top-left. Taps through to the pet's own screen. A div, not a
+         button: #stage-badge carries its own listener and nesting interactive
+         elements inside a <button> is invalid. -->
+    <div id="pet-tag">
+      <span id="pet-name" class="hidden"></span>
+      <span id="stage-badge">Egg</span>
     </div>
+
+    <!-- ONE orb, one question: does the pet need anything? The pills own every
+         urgency except hunger, which has none - so this is hunger's warning. -->
+    <button id="status-orb" class="status-orb" title="Needs"><span id="orb-icon" class="orb-icon">🙂</span></button>
 
     <!-- Contextual pills: the world tells you what it needs instead of five
          permanent keys asking. Only ONE ever shows - see pickContextPill(). -->
@@ -221,10 +219,10 @@
     </div>
   </div>
 
-  <script src="creature.js?v=54"></script>
-  <script src="speech.js?v=54"></script>
-  <script src="items.js?v=54"></script>
-  <script src="scenes.js?v=54"></script>
-  <script src="main.js?v=54"></script>
+  <script src="creature.js?v=55"></script>
+  <script src="speech.js?v=55"></script>
+  <script src="items.js?v=55"></script>
+  <script src="scenes.js?v=55"></script>
+  <script src="main.js?v=55"></script>
 </body>
 </html>

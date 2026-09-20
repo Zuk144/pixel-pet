@@ -833,7 +833,6 @@ function awardPayout() {
   logEarning(amount, `${state.name} contributed.`);
   chimeDing();
   showFloatingCredit(amount);
-  pulseBankBadge();
   // payday! - a cosmetic coin burst wherever the pet is standing
   for (let i = 0; i < 5; i++) {
     sceneFX.coins.push({
@@ -1079,8 +1078,9 @@ const vetHealthyEl = document.getElementById("vet-healthy");
 const petNameEl = document.getElementById("pet-name");
 const hallListEl = document.getElementById("hall-list");
 const hallEmptyEl = document.getElementById("hall-empty");
-const bankBadgeEl = document.getElementById("bank-badge");
-const bankAmountEl = document.getElementById("bank-amount");
+const petTagEl = document.getElementById("pet-tag");
+const statusOrbEl = document.getElementById("status-orb");
+const orbIconEl = document.getElementById("orb-icon");
 const bankBigAmountEl = document.getElementById("bank-big-amount");
 const bankFlavorEl = document.getElementById("bank-flavor");
 const bankLogEl = document.getElementById("bank-log");
@@ -1335,7 +1335,6 @@ function relativeTime(ms) {
 }
 
 function renderBank() {
-  bankAmountEl.textContent = bank;
   bankBigAmountEl.textContent = bank;
 
   const alive = state.stage !== "egg" && !state.ranAway;
@@ -1669,12 +1668,6 @@ function renderShop() {
     card.querySelector(".shop-buy-btn").addEventListener("click", () => buyShopItem(index));
     shopGridEl.appendChild(card);
   });
-}
-
-function pulseBankBadge() {
-  bankBadgeEl.classList.remove("ding");
-  void bankBadgeEl.offsetWidth; // restart the animation even if triggered again quickly
-  bankBadgeEl.classList.add("ding");
 }
 
 function showFloatingCredit(amount) {
@@ -2377,7 +2370,6 @@ for (const tab of document.querySelectorAll(".room-tab")) {
   tab.addEventListener("click", () => setRoom(activeRoom === tab.dataset.room ? "home" : tab.dataset.room));
 }
 foldCloseEl.addEventListener("click", () => setRoom("home"));
-bankBadgeEl.addEventListener("click", () => setRoom("bank"));
 
 // The ••• key reopens the sheet to wherever you last were; taps again to close.
 document.getElementById("more-btn").addEventListener("click", () => {
@@ -2542,7 +2534,8 @@ function setDevMode(on) {
 
 function setupDevMode() {
   if (new URLSearchParams(location.search).get("dev") === "1") setDevMode(true);
-  stageBadgeEl.addEventListener("click", () => {
+  stageBadgeEl.addEventListener("click", (e) => {
+    e.stopPropagation(); // #pet-tag opens Gear; the dev gesture must not
     const now = performance.now();
     devTapCount = now < devTapResetAt ? devTapCount + 1 : 1;
     devTapResetAt = now + 2500;
@@ -2604,65 +2597,69 @@ let openStatPop = null;
 
 // Orb "alert" fires exactly at the warn tier, so the pulse a player sees is
 // the same moment the distress clock starts ticking - one consistent signal.
-function orbState(stat) {
-  if (stat === "food") {
-    const v = 100 - state.hunger;
-    const warn = state.hunger >= WARN_HUNGER;
-    return { fill: v, color: warn ? "#ff5a5f" : v < 50 ? "#ffcd5b" : "#74cc9c", alert: warn };
-  }
-  if (stat === "clean") {
-    const v = state.cleanliness;
-    const warn = v <= WARN_CLEAN;
-    return { fill: v, color: warn ? "#ff5a5f" : v < 60 ? "#ffcd5b" : "#74cc9c", alert: warn };
-  }
-  const { min, max } = comfortWindow();
-  const inWindow = state.temp >= min && state.temp <= max;
-  return {
-    fill: 100,
-    color: inWindow ? "#74cc9c" : state.temp < min ? "#78c6e6" : "#ff5a5f",
-    alert: !inWindow,
-  };
+// One orb, one question: does the pet need anything? Keyed off warnStats() -
+// the same resolver the pills and the distress clock use - so every signal in
+// the game agrees about when something is wrong.
+//
+// Hunger is checked FIRST on purpose. temp and clean each raise a contextual
+// pill; hunger raises none, so this orb IS hunger's warning. If hunger and a
+// cold snap are both true the pill is already shouting about the cold, so the
+// orb shows the thing nothing else is showing. That's why this order differs
+// from pickContextPill()'s worst-first: the pill answers "what's the
+// emergency", the orb answers "what does it need".
+function overallStatus() {
+  const w = warnStats();
+  if (w.hunger) return { icon: "🍖", color: "#ff5a5f", fill: 100 - state.hunger, alert: true };
+  if (w.tempLow) return { icon: "🥶", color: "#78c6e6", fill: 100, alert: true };
+  if (w.tempHigh) return { icon: "🥵", color: "#ff5a5f", fill: 100, alert: true };
+  if (w.clean) return { icon: "🫧", color: "#ff5a5f", fill: state.cleanliness, alert: true };
+  const worst = Math.min(100 - state.hunger, state.cleanliness);
+  return { icon: "🙂", color: worst < 55 ? "#ffcd5b" : "#74cc9c", fill: worst, alert: false };
 }
 
 function renderStatusOrbs() {
   const alive = state.stage !== "egg" && !state.ranAway;
   if (!alive && openStatPop) closeStatPopover();
-  for (const orb of document.querySelectorAll(".status-orb")) {
-    orb.classList.toggle("dormant", !alive);
-    if (!alive) {
-      orb.style.setProperty("--fill", 0);
-      orb.classList.remove("alert");
-      continue;
-    }
-    const s = orbState(orb.dataset.stat);
-    orb.style.setProperty("--fill", s.fill);
-    orb.style.setProperty("--ring", s.color);
-    orb.classList.toggle("alert", !!s.alert);
+  statusOrbEl.classList.toggle("dormant", !alive);
+  if (!alive) {
+    statusOrbEl.style.setProperty("--fill", 0);
+    statusOrbEl.classList.remove("alert");
+    orbIconEl.textContent = "🥚";
+    return;
   }
+  const s = overallStatus();
+  statusOrbEl.style.setProperty("--fill", s.fill);
+  statusOrbEl.style.setProperty("--ring", s.color);
+  statusOrbEl.classList.toggle("alert", !!s.alert);
+  orbIconEl.textContent = s.icon;
 }
 
-function openStatPopover(stat) {
-  openStatPop = stat;
+// One orb means one popover showing ALL three needs. Strictly more information
+// than before, where a tap showed you exactly one of them.
+function openStatPopover() {
+  openStatPop = true;
   statPopoverEl.classList.remove("hidden");
   popoverBackdropEl.classList.remove("hidden");
   for (const sec of statPopoverEl.querySelectorAll(".pop-section")) {
-    sec.classList.toggle("hidden", sec.dataset.pop !== stat);
+    sec.classList.remove("hidden");
   }
   render();
 }
 
 function closeStatPopover() {
-  openStatPop = null;
+  openStatPop = false;
   statPopoverEl.classList.add("hidden");
   popoverBackdropEl.classList.add("hidden");
 }
 
-for (const orb of document.querySelectorAll(".status-orb")) {
-  orb.addEventListener("click", () => {
-    if (openStatPop === orb.dataset.stat) closeStatPopover();
-    else openStatPopover(orb.dataset.stat);
-  });
-}
+statusOrbEl.addEventListener("click", () => {
+  if (openStatPop) closeStatPopover();
+  else openStatPopover();
+});
+
+// Identity taps through to the pet's own screen. Gear is the only existing
+// room that's about THIS pet - it holds the stat block and the portrait.
+petTagEl.addEventListener("click", () => setRoom("gear"));
 popoverBackdropEl.addEventListener("click", closeStatPopover);
 document.getElementById("popover-close").addEventListener("click", closeStatPopover);
 

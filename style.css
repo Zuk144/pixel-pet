@@ -115,27 +115,6 @@ h1 {
   box-shadow: 0 2px 0 var(--mint-dk);
 }
 
-#bank-badge {
-  display: inline-block;
-  font-size: 12px;
-  font-weight: 800;
-  background: var(--butter);
-  color: #6a4e12;
-  padding: 4px 12px;
-  border-radius: 999px;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 2px 0 var(--butter-dk);
-}
-
-#bank-badge:hover {
-  filter: brightness(1.05);
-}
-
-#bank-badge.ding {
-  animation: bankDing 0.4s ease-out;
-}
-
 @keyframes bankDing {
   0% { transform: scale(1); }
   40% { transform: scale(1.3); }
@@ -1165,54 +1144,6 @@ h1 {
   color: #8a978f;
 }
 
-/* ============================================================
-   TOY REDESIGN — the app *is* the handheld device.
-   Status lives on the bezel (orbs), actions are chunky pad keys,
-   nav is a dock of round buttons. Appended last so equal-
-   specificity overrides here win over earlier rules.
-   ============================================================ */
-
-/* -- Compact header: name + chips in one row -- */
-/* -- Top bar: one frosted pill floating over the sky -- */
-#top-bar {
-  position: absolute;
-  top: 14px;
-  left: 12px;
-  right: 12px;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  border-radius: 24px;
-  background: rgba(255, 248, 236, 0.6);
-  backdrop-filter: blur(14px) saturate(1.4);
-  -webkit-backdrop-filter: blur(14px) saturate(1.4);
-  box-shadow: 0 4px 18px rgba(70, 50, 25, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.7);
-}
-
-#top-info {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-width: 0;
-  flex: 1;
-}
-
-#top-bar #pet-name {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 800;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  /* Flexbox lets an overflow:hidden item shrink toward 0 by default - without
-     a floor, a longer player-typed name (vs. the short curated PET_NAMES) can
-     get crushed to a single letter. This guarantees a readable chunk + "…". */
-  min-width: 52px;
-  flex-shrink: 1;
-}
-
 #stage-badge {
   flex-shrink: 0;
 }
@@ -1280,14 +1211,6 @@ h1 {
   z-index: 3;
   pointer-events: none;
   animation: floatUpFade 1.3s ease-out forwards;
-}
-
-/* -- Status orbs: small rings living in the top bar -- */
-#status-strip {
-  display: flex;
-  justify-content: center;
-  gap: 7px;
-  flex-shrink: 0;
 }
 
 .status-orb {
@@ -1909,7 +1832,8 @@ h1 {
   /* The Dynamic Island and the home indicator now sit over the world, so
      the floating furniture steps around them. The 0px fallbacks keep
      desktop and non-notched phones exactly where they were. */
-  #top-bar {
+  #pet-tag,
+  #status-orb {
     top: calc(14px + env(safe-area-inset-top, 0px));
   }
 
@@ -2062,4 +1986,82 @@ h1 {
    needed it too. */
 #app.has-pill #pet-message {
   top: 124px;
+}
+
+/* ============================================================
+   TOP: identity left, one status orb right.
+
+   The rail is gone for the same reason the dock's was: 24% of its 404px was
+   empty, so it wasn't grouping anything, it was a frame around a gap - and
+   with the dock rail removed it had become the only rectangular slab on a
+   screen whose whole point is a creature. Four corners now:
+   left = who, right = what; top = status, bottom = action.
+   ============================================================ */
+
+/* Same frosted material the rail used, just shrink-wrapped to its contents. */
+#pet-tag {
+  position: absolute;
+  top: 14px;
+  left: 12px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 62%; /* a 16-char name must never run under the orb */
+  padding: 6px 10px 6px 14px;
+  border-radius: 22px;
+  cursor: pointer;
+  background: rgba(255, 248, 236, 0.6);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow: 0 4px 18px rgba(70, 50, 25, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+#pet-tag:active {
+  transform: translateY(1px);
+}
+
+/* An egg has no name yet, so the chip is just the stage - don't leave it
+   lopsided with the extra left padding meant to sit before a name. */
+#pet-tag:has(#pet-name.hidden) {
+  padding-left: 10px;
+}
+
+#pet-tag #pet-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  min-width: 52px; /* long player names must not crush to one letter */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#status-orb {
+  position: absolute;
+  top: 14px;
+  right: 12px;
+  z-index: 20;
+  width: 44px;
+  height: 44px;
+  /* No rail behind it now, so it carries its own edge against a bright sky. */
+  box-shadow: 0 2px 10px rgba(70, 50, 25, 0.3);
+}
+
+/* At 34px with a 4px bezel the conic ring was ~4px wide and barely readable;
+   44px with a 5px inset finally lets the level actually mean something. */
+.status-orb::before {
+  inset: 5px;
+}
+
+.orb-icon {
+  font-size: 17px;
+}
+
+/* Goes quiet when nothing needs you - the same move as #app.asleep #dock, so
+   a healthy pet's screen is just the pet. */
+#status-orb:not(.alert):not(.dormant) {
+  opacity: 0.5;
+  filter: saturate(0.55);
+  transition: opacity 0.5s ease, filter 0.5s ease;
 }

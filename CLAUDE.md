@@ -50,9 +50,36 @@ bars, no labeled form sections, no data-dense buttons.
   it at 24% with its head 58% down and 88px of clearance above the dock. `measureSpritePad()` scans the canvas pixels so feet (not the canvas
   edge) sit on the ground. GOTCHA: never animate `transform` on `#pet-canvas` via CSS (it clobbers
   the inline position transform — sickPulse uses `filter` for exactly this reason).
-- **Top bar**: one frosted pill (`#top-bar`) — pet name + stage chip, the three **status orbs**
-  (conic ring = level, color = urgency, pulses when out of range), credits. Tapping an orb opens
-  the **stat popover** (thermostat dial + weather toggle live in the temp popover).
+- **Top: identity left, one status orb right.** The `#top-bar` rail is gone — 24% of its 404px was
+  empty, so it framed a gap rather than grouping anything, and once the dock rail went it was the
+  only rectangular slab left on a screen whose point is a creature. Now **four corners:
+  left = who, right = what; top = status, bottom = action.**
+  - `#pet-tag` (top-left): name + stage chip in one shrink-wrapped frosted pill. It's **identity**,
+    which is why it earns a permanent slot when the stage only changes four times a life. Tapping
+    it opens Gear — the only existing room that's about *this pet* (stat block, portrait). A `div`,
+    not a `button`, because `#stage-badge` nests its own listener inside it.
+    **GOTCHA: the dev gesture is 5 taps on `#stage-badge`, which now lives inside that tappable
+    chip** — its listener calls `e.stopPropagation()` first, or five taps opens Gear five times.
+  - `#status-orb` (top-right): **ONE** orb, 44px, answering one question — *does the pet need
+    anything?* `overallStatus()` keys off `warnStats()`, the same resolver the pills and distress
+    clock use. **Hunger is checked first on purpose**: temp and clean each raise a pill, hunger
+    raises none, so this orb *is* hunger's warning. (That order deliberately differs from
+    `pickContextPill()`'s worst-first — the pill answers "what's the emergency", the orb answers
+    "what does it need", so when hunger and a cold snap are both true the pill covers the cold and
+    the orb shows the thing nothing else is showing.) It dims to 0.5 when nothing is wrong, the
+    same move as `#app.asleep #dock`, so a healthy pet's screen is just the pet.
+  - Three orbs became one because the presentation was lying: the conic ring was ~4px wide at 34px
+    and `orbState("temp")` returned `fill: 100` unconditionally, so one of three rings carried no
+    level at all. What actually communicated was colour and pulse — two states, three times over —
+    for three needs on 4h/13h/rare tempos that are almost never simultaneously interesting.
+    Tapping the orb now opens the stat popover showing **all three** needs at once, so a tap gives
+    strictly more than the old one-orb-one-need did.
+  - **The coin badge was cut.** It read `0` for every pet's entire pre-adult life (credits accrue
+    only for adults), `awardPayout()` already floats a "+N 🪙" in the world, and the balance shows
+    on the amber LCD in Shop and Bank — you see your money where you spend it. Its `setRoom("bank")`
+    also just duplicated the Bank tab.
+  - Three surfaces, three questions, no overlap: **pills are for "now", the sheet is for "on
+    purpose", the orb is for "does it need anything".**
 - **Care dock** (`#dock`): **two 71px circles in the bottom corners — butter `Feed` bottom-left,
   dark `••• More` bottom-right.** The frosted rail is gone: a rail is a container for a *row* of
   keys, and with two corner buttons there is no row to contain. `#dock` itself survives as a
