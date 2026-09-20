@@ -338,7 +338,11 @@ Script load order is now: `creature.js` → `speech.js` → `items.js` → `scen
   in `sceneFX.vig`; `runVignette` drives the pet and clears it. All cosmetic. To add one: draw it +
   a `vigDrawX`/`drawVignette` case in scenes.js, then a `VIGNETTES[scene]` entry with a behavior.
 - **Test Tools panel** (dev-only): time-speed slider, skip-stage, give-random-item, +100 credits,
-  and the scene-jump row. **Gated behind dev mode**, not visible to normal players — open with
+  the scene-jump row, next-vignette, and a **systems row that jumps straight to a state**:
+  grow-to-adult, make-sick, starving, filthy, weather-event, and "fake 12h away". The last two
+  exist because they're otherwise untestable — a weather event is a ~2-3/day random roll that also
+  refuses to fire while the pet sleeps, and return coins key off REAL elapsed seconds so the time
+  slider can never produce them. **Gated behind dev mode**, not visible to normal players — open with
   `?dev=1` in the URL, or tap the stage badge 5× within 2.5s (`setupDevMode()`/`setDevMode()` in
   main.js). The dev tray now holds *only* Test Tools, so nothing player-facing sits below the slab.
 - **Naming the pet**: `randomName()` still picks a cute suggestion at birth (so an unnamed pet

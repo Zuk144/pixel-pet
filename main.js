@@ -2684,6 +2684,52 @@ function setupTestTools() {
     btn.addEventListener("click", () => jumpToScene(btn.dataset.scene));
   }
   document.getElementById("vignette-btn").addEventListener("click", jumpToVignette);
+
+  // ---- Jump straight to a state, for testing the systems that otherwise
+  // need real hours of waiting or a lucky roll. ----
+
+  document.getElementById("grow-adult-btn").addEventListener("click", () => {
+    let guard = 0;
+    while (STAGE_DURATIONS[state.stage] !== undefined && guard++ < 6) skipStage();
+    showMessage(`${state.name} is fully grown.`);
+    render();
+  });
+
+  // Sickness is normally 4h into the distress ladder. Straight to it.
+  document.getElementById("make-sick-btn").addEventListener("click", () => {
+    state.sick = true;
+    state.distressSince = state.simClock - DISTRESS_SICK_SECONDS;
+    render();
+  });
+
+  document.getElementById("make-hungry-btn").addEventListener("click", () => {
+    state.hunger = 95;
+    render();
+  });
+
+  document.getElementById("make-dirty-btn").addEventListener("click", () => {
+    state.cleanliness = 15;
+    render();
+  });
+
+  // The ONLY practical way to see the temp pill - a real event is a ~2-3/day
+  // random roll that also refuses to fire while the pet sleeps.
+  document.getElementById("weather-btn").addEventListener("click", () => {
+    const kind = state.temp > 50 ? "cold" : "heat";
+    state.weather = { kind, until: state.simClock + WEATHER_EVENT_MAX };
+    state.temp = kind === "cold" ? 10 : 90; // shove it clear of any comfort window
+    state.weatherNextAt = state.simClock + WEATHER_COOLDOWN;
+    render();
+  });
+
+  // catchUpAfterGap is fed REAL elapsed seconds, never scaled by timeScale,
+  // so the speed slider can never produce return coins. This can.
+  document.getElementById("return-btn").addEventListener("click", () => {
+    state.lastTick = Date.now() - 12 * HOUR * 1000;
+    catchUpAfterGap(12 * HOUR);
+    render();
+  });
+
   setTimeScale(timeScale);
 }
 
