@@ -1455,7 +1455,7 @@ function renderCompanionScreen() {
         : `NO PET  ·  BAG ${inventory.length}/${BACKPACK_CAPACITY}`;
       break;
     case "shop":
-      txt = `${bank} CR  ·  FRESH STOCK`;
+      txt = `${bank} CR  ·  FULL ${Math.round(100 - state.hunger)}%`;
       break;
     case "vet":
       txt = !alive ? "NO PET" : state.sick ? `! ${state.name.toUpperCase()} IS SICK` : `${state.name.toUpperCase()} IS WELL`;
@@ -2694,6 +2694,19 @@ function renderPantry() {
     if (badge) badge.textContent = n;
   }
   feedBtnEl.classList.toggle("empty", pantryCount() === 0);
+
+  // An egg has no hunger to show - a full faint ring reads as "no data yet"
+  // rather than a partial arc implying the egg is starving.
+  // NOTE: --fullness, deliberately not --fill. --fill is the .status-orb's
+  // property and custom properties inherit; distinct names mean the two
+  // gauges can never cross-contaminate.
+  const alive = state.stage !== "egg" && !state.ranAway;
+  const fullness = alive ? Math.round(100 - state.hunger) : 100;
+  feedBtnEl.style.setProperty("--fullness", fullness);
+  feedBtnEl.style.setProperty(
+    "--feed-ring",
+    fullness > 55 ? "#e8b84b" : fullness > 25 ? "#dda03a" : "#c9822f"
+  );
 }
 document.getElementById("clean-btn").addEventListener("click", () => {
   clean();

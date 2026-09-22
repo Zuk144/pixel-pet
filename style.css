@@ -2172,3 +2172,41 @@ h1 {
   position: absolute;
   inset: -11px;
 }
+
+/* ============================================================
+   FULLNESS RING on the Feed key
+
+   Hunger is the ONLY need with a purchasable, stockpilable input - you can't
+   buy cleanliness or warmth in advance. Provisioning needs a forecast where
+   reacting doesn't, which is why hunger earns a persistent readout and the
+   other two don't. It lives on the button you spend it with, so the screen
+   gains information without gaining an object.
+
+   It is a RESOURCE gauge, not an alert: one hue, no red, no pulse. Urgency
+   stays exclusively with the orb and the pills. If this ring ever turns red,
+   the dashboard has grown back.
+
+   Shown as FULLNESS, so it DRAINS as the pet gets hungry and reads as
+   something you spend - a growing ring would read as a threat and duplicate
+   the orb.
+   ============================================================ */
+#feed-btn {
+  background: conic-gradient(
+    var(--feed-ring, #e8b84b) calc(var(--fullness, 100) * 1%),
+    rgba(72, 58, 44, 0.45) 0
+  );
+}
+
+#feed-btn::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: var(--butter);
+}
+
+/* The ::before disc is positioned, so a STATIC child paints underneath it -
+   without this the 🍽️ silently disappears. */
+#feed-btn .dock-emoji {
+  position: relative;
+}
