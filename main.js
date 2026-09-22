@@ -2619,38 +2619,31 @@ document.getElementById("more-btn").addEventListener("click", () => {
 // so a plain tap just feeds a Meal. Hold for the Snack/Feast flyout. This makes
 // the most frequent action in the game one tap instead of two.
 const feedBtnEl = document.getElementById("feed-btn");
-const FEED_HOLD_MS = 450;
-let feedHold = null;
-
-// NOT stopPropagation: the global pointerdown that zooms the pet back to
+// Tapping Feed opens the shelf. It used to feed directly with bestFoodFor()
+// choosing for you - fine while food was free, wrong once it costs 6-25
+// credits from a bank that takes 4.5 days to start replenishing: an INVISIBLE
+// rule was spending a scarce resource without consent, and the player could
+// neither see the rule nor predict which item would vanish. bestFoodFor()
+// survives as a SUGGESTION marker on the shelf, so the logic still helps
+// without making the decision.
+//
+// NOTE: `click`, deliberately. The document-level pointerdown closer below
+// fires FIRST and already exempts #feed-btn, so the two don't fight - but
+// move this to pointerdown and the shelf will never open.
+// Also no stopPropagation: the global pointerdown that zooms the pet back to
 // closeup should still fire, so feeding brings it to you like any other tap.
-// The flyout's own close handler already ignores taps inside #feed-btn.
-feedBtnEl.addEventListener("pointerdown", () => {
-  feedHold = setTimeout(() => {
-    feedHold = null; // consumed by the hold, so pointerup must not also feed
-    feedMenuEl.classList.remove("hidden");
-  }, FEED_HOLD_MS);
+feedBtnEl.addEventListener("click", () => {
+  feedMenuEl.classList.toggle("hidden");
+  if (!feedMenuEl.classList.contains("hidden")) renderPantry();
 });
-feedBtnEl.addEventListener("pointerup", () => {
-  if (!feedHold) return; // the hold already opened the flyout
-  clearTimeout(feedHold);
-  feedHold = null;
-  const kind = bestFoodFor();
-  if (!kind) {
-    // Nothing to feed. Teach the rule rather than failing silently.
-    showMessage("The pantry is empty.");
-    setRoom("shop");
-    render();
-    return;
-  }
-  feedFromPantry(kind);
-  triggerSquish();
-  render();
+
+// The shelf is a quick peek; the Shop is the full room. Tapping through
+// REPLACES the shelf rather than burying it under a z-index 30 sheet.
+document.getElementById("feed-shop-link").addEventListener("click", () => {
+  feedMenuEl.classList.add("hidden");
+  setRoom("shop");
 });
-feedBtnEl.addEventListener("pointercancel", () => {
-  clearTimeout(feedHold);
-  feedHold = null;
-});
+
 document.addEventListener("pointerdown", (e) => {
   if (!feedMenuEl.contains(e.target) && !document.getElementById("feed-btn").contains(e.target)) {
     feedMenuEl.classList.add("hidden");
@@ -2686,10 +2679,15 @@ for (const btn of document.querySelectorAll(".food-btn")) {
 // The shelf shows what you actually own; an empty Feed key teaches the new
 // rule by sending you to the shop instead of failing silently.
 function renderPantry() {
+  // The old smart default, demoted to advice: mark what a tap WOULD have
+  // spent instead of spending it. Never marks a disabled button, since
+  // bestFoodFor() only returns a kind you actually own.
+  const suggested = bestFoodFor();
   for (const btn of document.querySelectorAll(".food-btn")) {
     const k = btn.dataset.food;
     const n = pantry[k] || 0;
     btn.disabled = n === 0;
+    btn.classList.toggle("suggested", k === suggested);
     const badge = btn.querySelector(".food-count");
     if (badge) badge.textContent = n;
   }

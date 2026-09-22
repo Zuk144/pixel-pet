@@ -2210,3 +2210,63 @@ h1 {
 #feed-btn .dock-emoji {
   position: relative;
 }
+
+/* ============================================================
+   THE SHELF — tapping Feed opens this instead of feeding.
+
+   One tap was right while food was FREE: bestFoodFor() was a convenience
+   shortcut over a resource with no wrong outcome. Once food costs 6-25
+   credits from a bank that takes 4.5 days to start replenishing, that same
+   shortcut became an invisible rule making an irreversible purchase without
+   consent - the player could neither see the rule nor predict which item
+   would disappear. Two taps buy back agency over a spend; when food was free
+   there was no agency to buy, which is why the same two taps would have been
+   pure tax then. It stays a FLYOUT, not a sheet: the sheet is for "on
+   purpose", the flyout is for "right now", and feeding is right now.
+   ============================================================ */
+#feed-menu {
+  flex-direction: column;
+  gap: 8px;
+}
+
+#feed-shelf {
+  display: flex;
+  gap: 7px;
+}
+
+#feed-menu .pad-btn {
+  width: 84px;
+  padding: 9px 0 8px;
+}
+
+.food-plus {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  opacity: 0.7;
+}
+
+/* bestFoodFor() demoted from action to advice - the item a tap used to spend
+   is merely marked now. The player keeps the logic; the choice stays theirs. */
+.food-btn.suggested {
+  box-shadow: 0 4px 0 var(--butter-dk), 0 0 0 2.5px var(--mint-dk);
+}
+
+#feed-shop-link {
+  width: 100%;
+  padding: 9px;
+  border: none;
+  border-radius: 14px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  cursor: pointer;
+  background: rgba(90, 74, 58, 0.82);
+  box-shadow: 0 3px 0 rgba(50, 40, 30, 0.9);
+}
+
+#feed-shop-link:active {
+  transform: translateY(3px);
+  box-shadow: none;
+}

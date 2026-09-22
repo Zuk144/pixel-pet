@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Pixel Pet</title>
-<link rel="stylesheet" href="style.css?v=64" />
+<link rel="stylesheet" href="style.css?v=65" />
 </head>
 <body>
   <!-- The slab: one phone-like face. The world fills it edge to edge;
@@ -39,11 +39,16 @@
     <!-- Contextual: the "leave it be" signal while the pet sleeps -->
     <div id="sleep-pill" class="hidden">🌙 <span id="sleep-text">Sleeping</span></div>
 
-    <!-- Feed flyout: pops above the dock's Feed key -->
+    <!-- The shelf: what you own, what each one gives, and the way to buy more.
+         Shows values but NOT prices - prices belong in the Shop; on food you
+         already own they'd imply you're spending money right now. -->
     <div id="feed-menu" class="hidden">
-      <button class="pad-btn food-btn" data-food="snack"><span class="pad-emoji">🍪</span><small>Snack</small><span class="food-count">0</span></button>
-      <button class="pad-btn food-btn" data-food="meal"><span class="pad-emoji">🍎</span><small>Meal</small><span class="food-count">0</span></button>
-      <button class="pad-btn food-btn" data-food="feast"><span class="pad-emoji">🍲</span><small>Feast</small><span class="food-count">0</span></button>
+      <div id="feed-shelf">
+        <button class="pad-btn food-btn" data-food="snack"><span class="pad-emoji">🍪</span><small>Snack</small><span class="food-plus">+12</span><span class="food-count">0</span></button>
+        <button class="pad-btn food-btn" data-food="meal"><span class="pad-emoji">🍎</span><small>Meal</small><span class="food-plus">+30</span><span class="food-count">0</span></button>
+        <button class="pad-btn food-btn" data-food="feast"><span class="pad-emoji">🍲</span><small>Feast</small><span class="food-plus">+55</span><span class="food-count">0</span></button>
+      </div>
+      <button id="feed-shop-link">🛒 Buy more food</button>
     </div>
 
     <!-- Care dock: the core loop, always visible, zero taps deep -->
@@ -233,10 +238,10 @@
     </div>
   </div>
 
-  <script src="creature.js?v=64"></script>
-  <script src="speech.js?v=64"></script>
-  <script src="items.js?v=64"></script>
-  <script src="scenes.js?v=64"></script>
-  <script src="main.js?v=64"></script>
+  <script src="creature.js?v=65"></script>
+  <script src="speech.js?v=65"></script>
+  <script src="items.js?v=65"></script>
+  <script src="scenes.js?v=65"></script>
+  <script src="main.js?v=65"></script>
 </body>
 </html>

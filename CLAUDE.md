@@ -89,6 +89,11 @@ bars, no labeled form sections, no data-dense buttons.
     stockpile and is homeostatic between pill-worthy events. If soap or blankets ever become
     purchasable, the same rule says give them a ring on their own buttons; if food goes back to
     free, the ring comes off. The rule scales; "hunger is important" wouldn't have.
+  - Corollary, learned the hard way twice: **making a resource scarce changes what its controls
+    mean.** A smart default is convenience over a free resource and a loss of agency over a
+    purchased one. When something becomes purchasable, re-audit every control that spends it —
+    `bestFoodFor()` went from acting to advising for exactly this reason. The same audit applies
+    the moment clean/warm/medicine get costs, or cosmetic DNA unlocks land.
 - **Care dock** (`#dock`): **two 71px circles in the bottom corners — butter `Feed` bottom-left,
   dark `••• More` bottom-right.** The frosted rail is gone: a rail is a container for a *row* of
   keys, and with two corner buttons there is no row to contain. `#dock` itself survives as a
@@ -296,10 +301,27 @@ Script load order is now: `creature.js` → `speech.js` → `items.js` → `scen
   cannot fit 20 shared slots, and stacking logic in a grid built for unique rarity/affix items is
   the abstraction this project avoids. Sold in an **always-stocked Pantry row above the rotating
   gear grid** — "the shop has no food today" while the pet starves would be a rage-quit.
-  **Feeding is still one tap**: `bestFoodFor()` picks the largest food that won't overfill (not
-  cheapest — you'd tap Snack three times on a starving pet; not biggest — you'd burn a Feast on a
-  peckish one), and hold still opens the shelf, now with owned-counts and disabled at zero. An
-  empty pantry dims the Feed key and a tap sends you to the Shop instead of failing silently.
+  **Tapping Feed opens the shelf** (`#feed-menu`) — three items with owned-counts and values,
+  disabled at zero, plus a `#feed-shop-link` that closes the shelf and opens the Shop (replacing
+  it, not burying it under the `z-index: 30` sheet). Choosing an item feeds it and closes.
+  It originally fed in ONE tap, with `bestFoodFor()` choosing for you. That was right while food
+  was **free** — a convenience shortcut over a resource with no wrong outcome. It became wrong the
+  moment food cost 6–25 credits from a bank that takes 4.5 days to start replenishing: an
+  **invisible rule making an irreversible purchase without consent**, where the player could
+  neither see the rule (`state.hunger + 10`) nor predict which item would vanish. Two taps buy
+  back agency over a spend; when food was free there was no agency to buy, so the same two taps
+  would have been pure tax. Costs ~4 extra taps/day (feeding is 3–5 *sessions*, not 9); one
+  mis-spent Feast is ~19% of a pre-adult pet's daily food budget and can't be undone.
+  **`bestFoodFor()` survives as advice, not action** — it marks the item a tap would have taken
+  (`.food-btn.suggested`), so the logic still helps without making the decision.
+  An empty pantry dims the Feed key *and* opens a shelf showing three zeros above the Shop button —
+  deliberately NOT a shortcut to the Shop: a tap that sometimes opens a menu and sometimes
+  navigates elsewhere is the same unpredictability the shelf exists to remove.
+  The shelf shows values but **not prices** — prices belong in the Shop; on food you already own
+  they imply you're spending money right now.
+  **GOTCHA:** the Feed opener is a `click`, deliberately. The document-level `pointerdown` closer
+  fires first and already exempts `#feed-btn`; move the opener to `pointerdown` and the shelf will
+  never open.
   **The safety net** (`maybeForage`): a foraged apple appears when `hunger >= WARN_HUNGER` AND the
   pantry is empty AND `bank < cheapest price` AND not asleep AND none already down, at most once
   per `FORAGE_COOLDOWN` (6h), worth exactly one Meal. It is tied to the **distress ladder, not a
