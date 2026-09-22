@@ -78,8 +78,17 @@ bars, no labeled form sections, no data-dense buttons.
     only for adults), `awardPayout()` already floats a "+N 🪙" in the world, and the balance shows
     on the amber LCD in Shop and Bank — you see your money where you spend it. Its `setRoom("bank")`
     also just duplicated the Bank tab.
-  - Three surfaces, three questions, no overlap: **pills are for "now", the sheet is for "on
-    purpose", the orb is for "does it need anything".**
+  - Four surfaces, four questions, no overlap: **pills are for "now", the sheet is for "on
+    purpose", the orb is for "does it need anything", and a persistent readout is for "what you
+    have to stock up on".** That fourth rule is what keeps the dashboard from growing back one
+    reasonable request at a time. **Hunger is the only need with a purchasable, stockpilable
+    input** — you can't buy cleanliness or warmth in advance — and *provisioning needs a forecast
+    where reacting doesn't*. So hunger earns the fullness ring and the other two earn nothing,
+    which isn't a carve-out: cleanliness already has a continuous world-readable level (**the
+    poops on the ground ARE the cleanliness meter** — you can count them), and temperature has no
+    stockpile and is homeostatic between pill-worthy events. If soap or blankets ever become
+    purchasable, the same rule says give them a ring on their own buttons; if food goes back to
+    free, the ring comes off. The rule scales; "hunger is important" wouldn't have.
 - **Care dock** (`#dock`): **two 71px circles in the bottom corners — butter `Feed` bottom-left,
   dark `••• More` bottom-right.** The frosted rail is gone: a rail is a container for a *row* of
   keys, and with two corner buttons there is no row to contain. `#dock` itself survives as a
@@ -262,6 +271,23 @@ Script load order is now: `creature.js` → `speech.js` → `items.js` → `scen
   Open-Meteo — no API key needed). Circular thermostat dial + compact always-visible band strip.
 - **Currency (Credits)**: adult pets earn passively on a per-species variable-ratio timer; health,
   gear, and stats affect the payout multiplier. Persistent Bank with a recent-earnings log.
+- **Fullness ring on the Feed key** (`renderPantry`, `#feed-btn` conic-gradient): food-as-commodity
+  introduced a question that didn't exist before — *"how much food should I buy?"* — a **planning**
+  question needing a quantity, asked at the Shop, not the boolean the orb answers. Below
+  `WARN_HUNGER` the orb shows a neutral 🙂 at 0.5 opacity, so fullness was unreadable without
+  tapping. The ring lives on the button you spend it with, so the screen gained information
+  without gaining an object — which is why it doesn't violate "NOT a dashboard" (that rule is
+  about persistent chrome and object count, not information).
+  **It is a resource gauge, not an alert: one hue, no red, no pulse** — urgency stays exclusively
+  with the orb and the pills, and if this ring ever turns red the dashboard has grown back. Shown
+  as **fullness** so it DRAINS; a growing ring reads as a threat and would duplicate the orb.
+  Composes with `.empty`: low ring + dimmed key = "hungry and nothing to feed it" at a glance.
+  **GOTCHAS:** `#feed-btn .dock-emoji` needs `position: relative`, or the 🍽️ paints *under* the
+  `::before` disc and silently vanishes. The property is `--fullness`, deliberately **not**
+  `--fill` — that's `.status-orb`'s, and custom properties inherit. An egg renders at 100 so it
+  never draws a partial arc implying it's starving. The Shop LCD prints `FULL n%` because
+  `#companion` is `z-index: 30` and covers the dock, hiding the ring at exactly the moment you're
+  deciding what to buy.
 - **Food is a commodity** (`pantry`, `FOOD_TYPES`, `buyFood`, `bestFoodFor`, `maybeForage`):
   Snack +12/6cr, Meal +30/15cr, Feast +55/25cr — **values identical to the old hardcoded
   `data-food` numbers**, so charging for food changed the economy without retuning hunger at all.
